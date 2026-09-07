@@ -139,6 +139,41 @@ section { padding: var(--space-6) 0; }
 .booking-total-row .total { font-size: 1.5rem; font-weight: 700; color: var(--teal-deep); }
 .booking-widget .btn-primary { width: 100%; text-align: center; margin-top: var(--space-3); }
 .booking-fineprint { font-size: 0.72rem; color: rgba(18,48,44,0.5); margin-top: var(--space-2); text-align: center; }
+.booking-widget .btn-secondary { width: 100%; text-align: center; }
+.mc-loc-btn { margin-top: 6px; padding: 10px 16px; font-size: 0.85rem; }
+.mc-loc-status { font-size: 0.76rem; color: var(--teal-mid); margin-top: 6px; min-height: 1em; }
+.bw-added { margin-top: var(--space-3); text-align: center; }
+.bw-added p { color: var(--teal-deep); font-weight: 600; margin-bottom: var(--space-2); }
+.bw-added .btn-primary, .bw-added .btn-secondary { width: 100%; margin-top: 8px; }
+
+/* ---------- floating cart ---------- */
+#mc-cart-btn { position: fixed; bottom: 24px; right: 24px; z-index: 200; width: 56px; height: 56px; border-radius: 50%; background: var(--teal-deep); color: #fff; border: none; font-size: 1.4rem; cursor: pointer; box-shadow: 0 6px 20px rgba(18,48,44,0.3); display: flex; align-items: center; justify-content: center; transition: transform 0.2s ease; }
+#mc-cart-btn:hover { transform: scale(1.06); }
+.mc-cart-badge { position: absolute; top: -4px; right: -4px; background: #d88c34; color: #fff; font-size: 0.68rem; font-weight: 700; min-width: 20px; height: 20px; border-radius: 999px; display: flex; align-items: center; justify-content: center; padding: 0 4px; }
+
+.mc-cart-overlay { position: fixed; inset: 0; background: rgba(18,48,44,0.5); backdrop-filter: blur(3px); z-index: 300; opacity: 0; pointer-events: none; transition: opacity 0.25s ease; display: flex; justify-content: flex-end; }
+.mc-cart-overlay.open { opacity: 1; pointer-events: auto; }
+.mc-cart-drawer { background: var(--cream); width: 100%; max-width: 420px; height: 100%; overflow-y: auto; padding: var(--space-4); transform: translateX(16px); transition: transform 0.25s ease; box-shadow: -8px 0 30px rgba(18,48,44,0.15); }
+.mc-cart-overlay.open .mc-cart-drawer { transform: translateX(0); }
+.mc-cart-head { display: flex; align-items: center; justify-content: space-between; margin-bottom: var(--space-3); }
+.mc-cart-head h3 { font-size: 1.2rem; }
+#mc-cart-close { background: none; border: none; font-size: 1.6rem; color: var(--teal-deep); cursor: pointer; line-height: 1; padding: 4px 10px; border-radius: 8px; }
+#mc-cart-close:hover { background: rgba(28,74,68,0.08); }
+.mc-cart-empty { font-size: 0.9rem; color: rgba(18,48,44,0.65); }
+.mc-cart-item { display: flex; gap: 12px; align-items: flex-start; padding: var(--space-2) 0; border-top: 1px solid rgba(28,74,68,0.1); }
+.mc-cart-item:first-child { border-top: none; }
+.mc-cart-item img, .mc-cart-item-noimg { width: 64px; height: 64px; border-radius: 10px; object-fit: cover; flex-shrink: 0; background: rgba(28,74,68,0.08); display: flex; align-items: center; justify-content: center; font-size: 1.4rem; }
+.mc-cart-item-info { flex: 1; min-width: 0; }
+.mc-cart-item-name { font-size: 0.9rem; font-weight: 500; }
+.mc-cart-item-detail { font-size: 0.76rem; color: rgba(18,48,44,0.6); margin-top: 2px; }
+.mc-cart-item-price { font-size: 0.85rem; font-weight: 600; color: var(--teal-deep); margin-top: 3px; }
+.mc-cart-remove { background: none; border: none; color: rgba(18,48,44,0.4); font-size: 1.3rem; cursor: pointer; line-height: 1; padding: 2px 6px; flex-shrink: 0; }
+.mc-cart-remove:hover { color: #b0473f; }
+.mc-cart-checkout { margin-top: var(--space-3); padding-top: var(--space-3); border-top: 1px solid rgba(28,74,68,0.14); }
+.mc-cart-total-row { display: flex; justify-content: space-between; align-items: baseline; margin-bottom: var(--space-2); }
+.mc-cart-total-row strong { font-size: 1.3rem; color: var(--teal-deep); }
+.mc-cart-checkout .btn-primary, .mc-cart-checkout .btn-secondary { width: 100%; text-align: center; }
+.mc-clear-cart { display: block; margin: 10px auto 0; background: none; border: none; font-size: 0.78rem; color: rgba(18,48,44,0.5); text-decoration: underline; cursor: pointer; }
 
 /* ---------- contact / footer ---------- */
 .cta-final { text-align: center; }

@@ -3,6 +3,25 @@
 
   var WA_NUMBER = '529841191147';
 
+  var LS_CART = 'mc_cart';
+  var LS_HOTEL = 'mc_hotel';
+  var LS_MAPS = 'mc_maps';
+  var LS_PERSONS = 'mc_persons';
+
+  // ---------- storage helpers ----------
+  function getCart() {
+    try { return JSON.parse(localStorage.getItem(LS_CART)) || []; } catch (e) { return []; }
+  }
+  function setCart(arr) {
+    try { localStorage.setItem(LS_CART, JSON.stringify(arr)); } catch (e) {}
+  }
+  function getStr(key) {
+    try { return localStorage.getItem(key) || ''; } catch (e) { return ''; }
+  }
+  function setStr(key, val) {
+    try { localStorage.setItem(key, val); } catch (e) {}
+  }
+
   // ---------- reveal on scroll ----------
   function initReveal() {
     var reduce = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
@@ -41,7 +60,170 @@
     return d.getFullYear() + '-' + mm + '-' + dd;
   }
 
-  // ---------- booking widget ----------
+  function usd(n) { return '$' + n.toLocaleString('en-US'); }
+
+  // ===========================================================================
+  // CART (global, injected on every page)
+  // ===========================================================================
+
+  function cartCount() { return getCart().length; }
+
+  function updateCartBadge() {
+    var badge = document.getElementById('mc-cart-badge');
+    if (!badge) return;
+    var n = cartCount();
+    badge.textContent = n;
+    badge.style.display = n > 0 ? 'flex' : 'none';
+  }
+
+  function injectCartUI() {
+    if (document.getElementById('mc-cart-btn')) return;
+
+    var btn = document.createElement('button');
+    btn.id = 'mc-cart-btn';
+    btn.type = 'button';
+    btn.setAttribute('aria-label', 'Ver carrito de reserva');
+    btn.innerHTML = '🛒<span id="mc-cart-badge" class="mc-cart-badge">0</span>';
+    document.body.appendChild(btn);
+
+    var overlay = document.createElement('div');
+    overlay.id = 'mc-cart-overlay';
+    overlay.className = 'mc-cart-overlay';
+    overlay.innerHTML = '<div class="mc-cart-drawer" role="dialog" aria-label="Carrito de reserva">' +
+      '<div class="mc-cart-head"><h3>Tu reserva</h3><button type="button" id="mc-cart-close" aria-label="Cerrar">×</button></div>' +
+      '<div id="mc-cart-items" class="mc-cart-items"></div>' +
+      '<div id="mc-cart-checkout" class="mc-cart-checkout"></div>' +
+      '</div>';
+    document.body.appendChild(overlay);
+
+    btn.addEventListener('click', function () { openCart(); });
+    overlay.addEventListener('click', function (e) { if (e.target === overlay) closeCart(); });
+    document.getElementById('mc-cart-close').addEventListener('click', closeCart);
+    document.addEventListener('keydown', function (e) {
+      if (e.key === 'Escape' && overlay.classList.contains('open')) closeCart();
+    });
+
+    updateCartBadge();
+  }
+
+  function openCart() {
+    renderCartDrawer();
+    document.getElementById('mc-cart-overlay').classList.add('open');
+  }
+  function closeCart() {
+    document.getElementById('mc-cart-overlay').classList.remove('open');
+  }
+  window.mcOpenCart = openCart;
+
+  function removeFromCart(idx) {
+    var cart = getCart();
+    cart.splice(idx, 1);
+    setCart(cart);
+    updateCartBadge();
+    renderCartDrawer();
+  }
+
+  function renderCartDrawer() {
+    var cart = getCart();
+    var itemsEl = document.getElementById('mc-cart-items');
+    var checkoutEl = document.getElementById('mc-cart-checkout');
+    if (!itemsEl) return;
+
+    if (cart.length === 0) {
+      itemsEl.innerHTML = '<p class="mc-cart-empty">Todavía no agregaste ningún tour. Elegí uno y tocá "Agregar al carrito" para armar tu reserva.</p>';
+      checkoutEl.innerHTML = '';
+      return;
+    }
+
+    var total = 0;
+    var hasQuote = false;
+    itemsEl.innerHTML = cart.map(function (item, i) {
+      if (typeof item.total === 'number') total += item.total;
+      else hasQuote = true;
+      return '<div class="mc-cart-item">' +
+        (item.photo ? '<img src="' + item.photo + '" alt="">' : '<div class="mc-cart-item-noimg">🌴</div>') +
+        '<div class="mc-cart-item-info">' +
+        '<div class="mc-cart-item-name">' + item.name + '</div>' +
+        '<div class="mc-cart-item-detail">' + item.detail + '</div>' +
+        '<div class="mc-cart-item-price">' + (typeof item.total === 'number' ? usd(item.total) : 'A cotizar') + '</div>' +
+        '</div>' +
+        '<button type="button" class="mc-cart-remove" data-idx="' + i + '" aria-label="Quitar">×</button>' +
+        '</div>';
+    }).join('');
+
+    itemsEl.querySelectorAll('.mc-cart-remove').forEach(function (b) {
+      b.addEventListener('click', function () { removeFromCart(parseInt(b.getAttribute('data-idx'), 10)); });
+    });
+
+    var hotel = getStr(LS_HOTEL);
+    var maps = getStr(LS_MAPS);
+    var persons = getStr(LS_PERSONS);
+
+    checkoutEl.innerHTML =
+      '<div class="mc-cart-total-row"><span>Total estimado</span><strong>' + usd(total) + (hasQuote ? ' + ítems a cotizar' : '') + '</strong></div>' +
+      '<div class="booking-field"><label for="mc-hotel">Hotel / lugar de hospedaje</label>' +
+      '<input type="text" id="mc-hotel" placeholder="Ej: Hotel Grand Sirenis, Riviera Maya" value="' + hotel.replace(/"/g, '&quot;') + '"></div>' +
+      '<div class="booking-field"><label for="mc-persons">Cantidad de personas del grupo</label>' +
+      '<input type="number" id="mc-persons" min="1" value="' + (persons || '1') + '"></div>' +
+      '<div class="booking-field">' +
+      '<button type="button" class="btn-secondary mc-loc-btn" id="mc-share-location">📍 Compartir mi ubicación</button>' +
+      '<div id="mc-loc-status" class="mc-loc-status">' + (maps ? '✓ Ubicación agregada' : '') + '</div>' +
+      '</div>' +
+      '<button type="button" class="btn-primary" id="mc-checkout-cta">Reservar todo por WhatsApp</button>' +
+      '<button type="button" class="mc-clear-cart" id="mc-clear-cart">Vaciar carrito</button>';
+
+    document.getElementById('mc-hotel').addEventListener('input', function (e) { setStr(LS_HOTEL, e.target.value); });
+    document.getElementById('mc-persons').addEventListener('input', function (e) { setStr(LS_PERSONS, e.target.value); });
+    document.getElementById('mc-share-location').addEventListener('click', shareLocation);
+    document.getElementById('mc-clear-cart').addEventListener('click', function () {
+      if (confirm('¿Vaciar todo el carrito?')) { setCart([]); updateCartBadge(); renderCartDrawer(); }
+    });
+    document.getElementById('mc-checkout-cta').addEventListener('click', sendCartToWhatsApp);
+  }
+
+  function shareLocation() {
+    var status = document.getElementById('mc-loc-status');
+    if (!navigator.geolocation) {
+      if (status) status.textContent = 'Tu navegador no permite compartir ubicación. Escribí el hotel arriba.';
+      return;
+    }
+    if (status) status.textContent = 'Buscando tu ubicación…';
+    navigator.geolocation.getCurrentPosition(function (pos) {
+      var link = 'https://www.google.com/maps?q=' + pos.coords.latitude + ',' + pos.coords.longitude;
+      setStr(LS_MAPS, link);
+      if (status) status.textContent = '✓ Ubicación agregada';
+    }, function () {
+      if (status) status.textContent = 'No pudimos obtener tu ubicación. Escribí el nombre del hotel arriba, no hay problema.';
+    }, { timeout: 10000 });
+  }
+
+  function sendCartToWhatsApp() {
+    var cart = getCart();
+    if (cart.length === 0) return;
+    var hotel = getStr(LS_HOTEL);
+    var maps = getStr(LS_MAPS);
+    var persons = getStr(LS_PERSONS);
+    var lines = ['¡Hola! Quiero reservar estos tours:', ''];
+    var total = 0;
+    cart.forEach(function (item, i) {
+      lines.push((i + 1) + '. ' + item.name);
+      lines.push('   ' + item.detail);
+      lines.push('   ' + (typeof item.total === 'number' ? usd(item.total) + ' USD' : 'A cotizar'));
+      if (typeof item.total === 'number') total += item.total;
+      lines.push('   ' + item.url);
+      lines.push('');
+    });
+    lines.push('Total estimado: ' + usd(total) + ' USD');
+    if (hotel) lines.push('Hotel: ' + hotel);
+    if (persons) lines.push('Personas del grupo: ' + persons);
+    if (maps) lines.push('Ubicación: ' + maps);
+    window.open(waLink(lines.join('\n')), '_blank', 'noopener');
+  }
+
+  // ===========================================================================
+  // BOOKING WIDGET (per tour page)
+  // ===========================================================================
+
   function initBooking() {
     var el = document.getElementById('booking-widget');
     if (!el) return;
@@ -49,28 +231,20 @@
     if (!dataEl) return;
     var data = JSON.parse(dataEl.textContent);
     var pageUrl = window.location.href;
+    var photoEl = document.querySelector('.tour-hero-photo');
+    var photoSrc = photoEl ? photoEl.getAttribute('src') : null;
 
     var state = { date: '', adults: 1, children: 0, persons: 1, tierIndex: 0 };
 
-    function usd(n) { return '$' + n.toLocaleString('en-US'); }
-
     function calcTotal() {
-      if (data.type === 'adult_child') {
-        return state.adults * data.adult + state.children * data.child;
-      }
-      if (data.type === 'per_person') {
-        return state.persons * data.price;
-      }
-      if (data.type === 'tiers') {
-        return state.persons * data.tiers[state.tierIndex].price;
-      }
-      if (data.type === 'duration_group') {
-        return data.tiers[state.tierIndex].price;
-      }
+      if (data.type === 'adult_child') return state.adults * data.adult + state.children * data.child;
+      if (data.type === 'per_person') return state.persons * data.price;
+      if (data.type === 'tiers') return state.persons * data.tiers[state.tierIndex].price;
+      if (data.type === 'duration_group') return data.tiers[state.tierIndex].price;
       return null;
     }
 
-    function counterRow(id, label, sub, min, max) {
+    function counterRow(id, label, sub) {
       return '<div class="counter-row">' +
         '<div class="counter-label">' + label + (sub ? '<small>' + sub + '</small>' : '') + '</div>' +
         '<div class="counter-controls">' +
@@ -105,53 +279,67 @@
     }
 
     if (data.type === 'adult_child') {
-      html += '<div class="booking-field">' + counterRow('adults', 'Adultos', null, 1, 30) + counterRow('children', 'Niños', null, 0, 30) + '</div>';
+      html += '<div class="booking-field">' +
+        counterRow('adults', 'Adultos', '10 años en adelante') +
+        counterRow('children', 'Niños', '3 a 9 años') +
+        '</div>' +
+        '<p class="booking-fineprint">Infantes de 0 a 2 años: sin cargo, no se cuentan en la reserva.</p>';
     } else if (data.type !== 'duration_group') {
-      html += '<div class="booking-field">' + counterRow('persons', 'Personas', null, 1, 30) + '</div>';
+      html += '<div class="booking-field">' + counterRow('persons', 'Personas', null) + '</div>';
     } else {
-      html += '<div class="booking-field">' + counterRow('persons', 'Pasajeros', 'Hasta ' + (data.maxGroup || 7) + ' por embarcación', 1, data.maxGroup || 7) + '</div>';
+      html += '<div class="booking-field">' + counterRow('persons', 'Pasajeros', 'Hasta ' + (data.maxGroup || 7) + ' por embarcación') + '</div>';
     }
 
     if (data.type !== 'quote' && data.type !== 'duration_group') {
       html += '<div class="booking-total-row"><span class="label">Total estimado</span><span class="total" id="bw-total">' + usd(calcTotal()) + '</span></div>';
     }
 
-    html += '<button type="button" class="btn-primary" id="bw-cta">' + (data.type === 'quote' ? 'Pedir cotización por WhatsApp' : 'Reservar por WhatsApp') + '</button>';
+    html += '<div class="booking-field"><label for="bw-hotel">Hotel / lugar de hospedaje</label>' +
+      '<input type="text" id="bw-hotel" placeholder="Ej: Hotel Grand Sirenis, Riviera Maya" value="' + getStr(LS_HOTEL).replace(/"/g, '&quot;') + '"></div>';
+    html += '<div class="booking-field">' +
+      '<button type="button" class="btn-secondary mc-loc-btn" id="bw-share-location">📍 Compartir mi ubicación</button>' +
+      '<div id="bw-loc-status" class="mc-loc-status">' + (getStr(LS_MAPS) ? '✓ Ubicación agregada' : '') + '</div>' +
+      '</div>';
+
+    html += '<button type="button" class="btn-primary" id="bw-cta">🛒 Agregar al carrito</button>';
+    html += '<div id="bw-added" class="bw-added" hidden>' +
+      '<p>✓ Agregado al carrito</p>' +
+      '<button type="button" class="btn-primary" id="bw-goto-cart">Ver carrito y reservar →</button>' +
+      '<button type="button" class="btn-secondary" id="bw-keep-browsing">Seguir viendo tours</button>' +
+      '</div>';
     html += '<p class="booking-fineprint">Se coordina y confirma directo por WhatsApp con Agustín.</p>';
 
     el.innerHTML = html;
 
-    // wire up date
-    document.getElementById('bw-date').addEventListener('change', function (e) {
-      state.date = e.target.value;
+    document.getElementById('bw-date').addEventListener('change', function (e) { state.date = e.target.value; });
+    document.getElementById('bw-hotel').addEventListener('input', function (e) { setStr(LS_HOTEL, e.target.value); });
+    document.getElementById('bw-share-location').addEventListener('click', function () {
+      var status = document.getElementById('bw-loc-status');
+      if (!navigator.geolocation) { status.textContent = 'Tu navegador no permite compartir ubicación.'; return; }
+      status.textContent = 'Buscando tu ubicación…';
+      navigator.geolocation.getCurrentPosition(function (pos) {
+        setStr(LS_MAPS, 'https://www.google.com/maps?q=' + pos.coords.latitude + ',' + pos.coords.longitude);
+        status.textContent = '✓ Ubicación agregada';
+      }, function () {
+        status.textContent = 'No pudimos obtener tu ubicación. No hay problema, con el hotel alcanza.';
+      }, { timeout: 10000 });
     });
 
-    // wire up counters
     function bindCounter(id, key, min, max) {
       var valEl = document.getElementById('val-' + id);
       if (!valEl) return;
       valEl.textContent = state[key];
-      el.querySelectorAll('[data-dec="' + id + '"]').forEach(function (btn) {
-        btn.addEventListener('click', function () {
-          if (state[key] > min) { state[key]--; valEl.textContent = state[key]; updateTotal(); }
-        });
+      el.querySelectorAll('[data-dec="' + id + '"]').forEach(function (b) {
+        b.addEventListener('click', function () { if (state[key] > min) { state[key]--; valEl.textContent = state[key]; updateTotal(); } });
       });
-      el.querySelectorAll('[data-inc="' + id + '"]').forEach(function (btn) {
-        btn.addEventListener('click', function () {
-          if (state[key] < max) { state[key]++; valEl.textContent = state[key]; updateTotal(); }
-        });
+      el.querySelectorAll('[data-inc="' + id + '"]').forEach(function (b) {
+        b.addEventListener('click', function () { if (state[key] < max) { state[key]++; valEl.textContent = state[key]; updateTotal(); } });
       });
     }
-    if (data.type === 'adult_child') {
-      bindCounter('adults', 'adults', 1, 30);
-      bindCounter('children', 'children', 0, 30);
-    } else if (data.type !== 'duration_group') {
-      bindCounter('persons', 'persons', 1, 30);
-    } else {
-      bindCounter('persons', 'persons', 1, data.maxGroup || 7);
-    }
+    if (data.type === 'adult_child') { bindCounter('adults', 'adults', 1, 30); bindCounter('children', 'children', 0, 30); }
+    else if (data.type !== 'duration_group') bindCounter('persons', 'persons', 1, 30);
+    else bindCounter('persons', 'persons', 1, data.maxGroup || 7);
 
-    // wire up tiers
     var tierEls = el.querySelectorAll('.tier-option');
     tierEls.forEach(function (opt) {
       opt.addEventListener('click', function () {
@@ -168,38 +356,42 @@
     });
 
     function updateTotal() {
-      var totalEl = document.getElementById('bw-total');
-      if (totalEl) totalEl.textContent = usd(calcTotal());
+      var t = document.getElementById('bw-total');
+      if (t) t.textContent = usd(calcTotal());
+    }
+
+    function detailText() {
+      if (data.type === 'adult_child') return fmtDate(state.date) + ' · ' + state.adults + ' adultos, ' + state.children + ' niños';
+      if (data.type === 'tiers') return fmtDate(state.date) + ' · ' + data.tiers[state.tierIndex].label + ' · ' + state.persons + ' personas';
+      if (data.type === 'duration_group') return fmtDate(state.date) + ' · ' + data.tiers[state.tierIndex].label + ' · ' + state.persons + ' pasajeros';
+      if (data.type === 'per_person') return fmtDate(state.date) + ' · ' + state.persons + ' personas';
+      return fmtDate(state.date) + ' · ' + state.persons + ' personas (cotización)';
     }
 
     document.getElementById('bw-cta').addEventListener('click', function () {
-      var lines = [];
-      lines.push('¡Hola! Quiero ' + (data.type === 'quote' ? 'pedir una cotización' : 'reservar') + ': ' + data.name);
-      lines.push('Fecha: ' + fmtDate(state.date));
-      if (data.type === 'adult_child') {
-        lines.push('Adultos: ' + state.adults + ' · Niños: ' + state.children);
-        lines.push('Total estimado: ' + usd(calcTotal()) + ' USD');
-      } else if (data.type === 'tiers') {
-        lines.push('Opción: ' + data.tiers[state.tierIndex].label);
-        lines.push('Personas: ' + state.persons);
-        lines.push('Total estimado: ' + usd(calcTotal()) + ' USD');
-      } else if (data.type === 'duration_group') {
-        lines.push('Duración: ' + data.tiers[state.tierIndex].label);
-        lines.push('Pasajeros: ' + state.persons);
-        lines.push('Total estimado: ' + usd(calcTotal()) + ' USD (para el grupo)');
-      } else if (data.type === 'per_person') {
-        lines.push('Personas: ' + state.persons);
-        lines.push('Total estimado: ' + usd(calcTotal()) + ' USD');
-      } else {
-        lines.push('Personas: ' + state.persons);
-      }
-      lines.push(pageUrl);
-      window.open(waLink(lines.join('\n')), '_blank', 'noopener');
+      var cart = getCart();
+      cart.push({
+        name: data.name,
+        detail: detailText(),
+        total: data.type === 'quote' ? null : calcTotal(),
+        url: pageUrl,
+        photo: photoSrc,
+      });
+      setCart(cart);
+      updateCartBadge();
+      document.getElementById('bw-cta').hidden = true;
+      document.getElementById('bw-added').hidden = false;
+    });
+    document.getElementById('bw-goto-cart').addEventListener('click', function () { window.mcOpenCart(); });
+    document.getElementById('bw-keep-browsing').addEventListener('click', function () {
+      document.getElementById('bw-added').hidden = true;
+      document.getElementById('bw-cta').hidden = false;
     });
   }
 
   document.addEventListener('DOMContentLoaded', function () {
     initReveal();
+    injectCartUI();
     initBooking();
   });
 })();

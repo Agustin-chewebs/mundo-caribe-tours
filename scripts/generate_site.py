@@ -17,6 +17,9 @@ ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 BASE_URL = 'https://mundocaribetours.netlify.app'
 WA_NUMBER = '529841191147'
 
+GENERAL_AGE_NOTE = 'Edades: infantes de 0 a 2 años (sin cargo), niños de 3 a 9 años, adultos desde 10 años en adelante.'
+SNORKEL_AGE_NOTE = 'Para hacer snorkel: edad mínima 8 años, edad máxima 65 años.'
+
 # ---------------------------------------------------------------------------
 # DATA
 # ---------------------------------------------------------------------------
@@ -118,6 +121,7 @@ TOURS = [
                      'Snorkel con tortugas en Akumal', 'Equipo completo de snorkel y chaleco salvavidas',
                      'Guía especializado durante la actividad', 'Comida (bebidas no incluidas)'],
         'tax': 'Impuesto federal de Tulum (no incluido): $265 MXN, se paga en el sitio', 'note': None,
+        'snorkel': True,
         'pricing': {'type': 'per_person', 'price': 121},
     },
     {
@@ -152,6 +156,7 @@ TOURS = [
         'includes': ['Transportación redonda', 'Paseo en bote', 'Snorkel en Isla Contoy (equipo incluido)',
                      'Tiempo libre en Isla Contoy e Isla Mujeres', 'Bebidas a bordo', 'Comida regional (pollo o pescado a la Tikinxic)'],
         'tax': 'Impuesto federal (no incluido): USD 23 ($360 MXN)', 'note': None,
+        'snorkel': True,
         'pricing': {'type': 'per_person', 'price': 111},
     },
     {
@@ -164,6 +169,7 @@ TOURS = [
                      'Barra libre (a bordo y en el club de playa)', 'Snorkel en arrecife (equipo incluido)',
                      'Spinnaker (según clima)', 'Tiempo libre en Isla Mujeres'],
         'tax': None, 'note': 'El precio incluye el impuesto federal (USD 20); se abona antes de abordar la embarcación',
+        'snorkel': True,
         'pricing': {'type': 'per_person', 'price': 75},
     },
     {
@@ -186,6 +192,7 @@ TOURS = [
         'includes': ['Paseo en catamarán de 5 horas', 'Snorkel en 3 paradas (El Cielo, El Cielito y Chankanaab)',
                      'Alimentos y bebidas a bordo', 'Equipo de snorkel incluido'],
         'tax': 'No incluye ferry a Cozumel: USD 30 viaje redondo aprox.', 'note': None,
+        'snorkel': True,
         'pricing': {'type': 'per_person', 'price': 109},
     },
     {
@@ -197,6 +204,7 @@ TOURS = [
         'includes': ['Transportación desde Playa del Carmen', 'Lancha rápida hasta el área de avistamiento',
                      'Equipo completo de snorkel', 'Guía certificado', 'Box lunch y bebidas'],
         'tax': None, 'note': 'No apto para embarazadas',
+        'snorkel': True,
         'pricing': {'type': 'per_person', 'price': 163},
     },
     {
@@ -222,6 +230,7 @@ TOURS = [
         'includes': ['Transportación redonda', 'Snorkel guiado con tortugas en Akumal', 'Equipo de snorkel incluido',
                      'Entrada al Cenote Nohoch', 'Acceso a zona de hamacas y descanso', 'Comida buffet regional'],
         'tax': None, 'note': 'Actividad sujeta a condiciones del mar, cupos limitados',
+        'snorkel': True,
         'pricing': {'type': 'per_person', 'price': 97},
     },
     {
@@ -233,6 +242,7 @@ TOURS = [
         'includes': ['Transportación ida y vuelta', 'Equipo de snorkel', 'Guía durante el recorrido', 'Chaleco salvavidas',
                      'Tiempo libre en la playa', 'Impuestos incluidos'],
         'tax': None, 'note': None,
+        'snorkel': True,
         'pricing': {'type': 'per_person', 'price': 72},
     },
     {
@@ -438,26 +448,26 @@ def page_shell(head, body):
 def render_tour_card(tour):
     photo_html = f'<img class="tour-card-photo" src="/assets/tours/{tour["photo"]}" alt="{tour["name"]}">' if tour.get('photo') else ''
     price = price_summary(tour['pricing'])
-    return f'''<div class="tour-card">
+    return f'''<a class="tour-card" href="/tour/{tour['slug']}/">
         {photo_html}
         <div class="tour-card-body">
         <h3>{tour['name']}</h3>
         <p class="desc">{tour['desc']}</p>
         <div class="card-price">{price}</div>
-        <a class="tour-link" href="/tour/{tour['slug']}/">Ver detalles →</a>
+        <span class="tour-link">Ver detalles →</span>
         </div>
-      </div>'''
+      </a>'''
 
 
 def render_quote_card(item):
-    return f'''<div class="tour-card">
+    return f'''<a class="tour-card" href="{wa_link('¡Hola! Quiero pedir una cotización para: ' + item['name'])}" target="_blank" rel="noopener">
         <div class="tour-card-body">
         <h3>{item['name']}</h3>
         <p class="desc">{item['desc']}</p>
         <span class="quote-badge">Cotización personalizada</span>
-        <a class="tour-link" href="{wa_link('¡Hola! Quiero pedir una cotización para: ' + item['name'])}" target="_blank" rel="noopener">Pedir cotización →</a>
+        <span class="tour-link">Pedir cotización →</span>
         </div>
-      </div>'''
+      </a>'''
 
 
 # ---------------------------------------------------------------------------
@@ -617,6 +627,10 @@ def render_tour_page(tour):
         notes_html += f'<div class="info-note warn">{tour["tax"]}</div>'
     if tour.get('note'):
         notes_html += f'<div class="info-note">{tour["note"]}</div>'
+    if tour.get('snorkel'):
+        notes_html += f'<div class="info-note">{SNORKEL_AGE_NOTE}</div>'
+    if tour['pricing']['type'] == 'adult_child':
+        notes_html += f'<div class="info-note">{GENERAL_AGE_NOTE}</div>'
 
     others = [t for t in TOURS if t['category'] == tour['category'] and t['slug'] != tour['slug']][:3]
     related_html = ''
