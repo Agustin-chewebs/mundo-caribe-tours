@@ -20,6 +20,9 @@ WA_NUMBER = '529841191147'
 GENERAL_AGE_NOTE = 'Edades: infantes de 0 a 2 años (sin cargo), niños de 3 a 9 años, adultos desde 10 años en adelante.'
 SNORKEL_AGE_NOTE = 'Para hacer snorkel: edad mínima 8 años, edad máxima 65 años.'
 
+INSTAGRAM_URL = 'https://www.instagram.com/mundocaribetours'
+GOOGLE_MAPS_URL = 'https://share.google/n1J6T9x87tUbbPaJm'
+
 # ---------------------------------------------------------------------------
 # DATA
 # ---------------------------------------------------------------------------
@@ -401,7 +404,8 @@ def render_footer():
       <p>Escribinos y coordinamos todo por WhatsApp.</p>
       <a class="btn-primary" href="''' + wa_link('Hola, quisiera información sobre los tours.') + '''" target="_blank" rel="noopener">Escribinos por WhatsApp</a>
       <div class="handles">
-        <span>@mundocaribetours</span>
+        <a href="''' + INSTAGRAM_URL + '''" target="_blank" rel="noopener">@mundocaribetours</a>
+        <a href="''' + GOOGLE_MAPS_URL + '''" target="_blank" rel="noopener">⭐ Reseñas en Google</a>
         <span>Playa del Carmen, Riviera Maya</span>
       </div>
     </div>

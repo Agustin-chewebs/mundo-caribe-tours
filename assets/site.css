@@ -184,6 +184,8 @@ section { padding: var(--space-6) 0; }
 .cta-final p { margin-top: var(--space-2); color: rgba(18,48,44,0.7); }
 .cta-final .btn-primary { margin-top: var(--space-4); padding: 17px 34px; font-size: 0.98rem; }
 .handles { margin-top: var(--space-4); display: flex; justify-content: center; gap: var(--space-3); flex-wrap: wrap; font-size: 0.85rem; color: rgba(18,48,44,0.6); }
+.handles a { color: var(--teal-deep); font-weight: 500; border-bottom: 1.5px solid transparent; transition: border-color 0.15s ease; }
+.handles a:hover { border-color: var(--teal-mid); }
 
 footer { border-top: 1px solid rgba(28,74,68,0.14); padding: var(--space-4) 0; font-size: 0.8rem; color: rgba(18,48,44,0.55); }
 footer .container { display: flex; justify-content: space-between; flex-wrap: wrap; gap: var(--space-2); }
