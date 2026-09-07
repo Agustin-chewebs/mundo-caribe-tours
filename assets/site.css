@@ -42,9 +42,22 @@ ul { margin: 0; padding: 0; list-style: none; }
 .nav .container { display: flex; align-items: center; justify-content: space-between; padding-top: var(--space-2); padding-bottom: var(--space-2); }
 .brand { display: flex; align-items: center; gap: 10px; font-family: var(--font-display); font-size: 1.25rem; color: var(--teal-deep); font-weight: 600; }
 .brand img { height: 38px; width: auto; object-fit: contain; }
-.nav-links { display: flex; gap: var(--space-4); font-size: 0.88rem; letter-spacing: 0.02em; }
+.nav-links { display: flex; align-items: center; gap: var(--space-4); font-size: 0.88rem; letter-spacing: 0.02em; }
 .nav-links a { opacity: 0.8; transition: opacity 0.2s ease; }
 .nav-links a:hover { opacity: 1; }
+
+/* ---------- nav "Tours" dropdown ---------- */
+.nav-dropdown { position: relative; }
+.nav-dropdown-trigger { display: flex; align-items: center; gap: 5px; background: none; border: none; padding: 0; margin: 0; font: inherit; letter-spacing: inherit; color: inherit; opacity: 0.8; cursor: pointer; }
+.nav-dropdown-trigger:hover, .nav-dropdown.open .nav-dropdown-trigger { opacity: 1; }
+.nav-dropdown-caret { font-size: 0.65em; transition: transform 0.2s ease; }
+.nav-dropdown.open .nav-dropdown-caret { transform: rotate(180deg); }
+.nav-dropdown-menu { position: absolute; top: calc(100% + 16px); left: 50%; transform: translateX(-50%); min-width: 250px; background: #fff; border: 1px solid rgba(28,74,68,0.1); border-radius: 14px; box-shadow: 0 14px 34px rgba(18,48,44,0.16); padding: 8px; display: none; flex-direction: column; z-index: 60; }
+.nav-dropdown.open .nav-dropdown-menu { display: flex; }
+.nav-dropdown-menu a { display: block; padding: 10px 14px; border-radius: 9px; font-size: 0.88rem; color: var(--teal-deep); opacity: 1; }
+.nav-dropdown-menu a:hover { background: rgba(63,133,119,0.1); }
+.nav-dropdown-sep { height: 1px; background: rgba(28,74,68,0.1); margin: 6px 6px; }
+.nav-dropdown-menu a.nav-dropdown-all { font-weight: 600; }
 .btn-whatsapp { background: var(--teal-deep); color: var(--cream); padding: 10px 20px; border-radius: 999px; font-size: 0.82rem; font-weight: 500; white-space: nowrap; transition: background 0.2s ease, transform 0.2s ease; }
 .btn-whatsapp:hover { background: var(--teal-mid); transform: translateY(-1px); }
 
@@ -78,6 +91,19 @@ section { padding: var(--space-6) 0; }
 
 /* ---------- tour cards ---------- */
 .tour-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(230px, 1fr)); gap: var(--space-3); }
+
+/* ---------- horizontal drag carousel (infinite loop) ---------- */
+.tour-carousel-wrap { overflow-x: auto; overflow-y: hidden; -webkit-overflow-scrolling: touch; scrollbar-width: none; cursor: grab; margin: 0 calc(-1 * var(--space-3)); padding: 4px var(--space-3) var(--space-2); user-select: none; }
+.tour-carousel-wrap::-webkit-scrollbar { display: none; }
+.tour-carousel-wrap.dragging { cursor: grabbing; }
+.tour-carousel-wrap.dragging .tour-card { pointer-events: none; }
+.tour-carousel { display: flex; gap: var(--space-3); }
+.tour-carousel .tour-card { flex: 0 0 260px; }
+
+/* ---------- "todos los tours" page ---------- */
+.all-tours-group { margin-top: var(--space-6); }
+.all-tours-group:first-child { margin-top: 0; }
+.all-tours-group h2 { font-size: 1.4rem; margin-bottom: var(--space-3); }
 .tour-card { background: #fff; border: 1px solid rgba(28, 74, 68, 0.12); border-radius: var(--radius); padding: var(--space-3); box-shadow: 0 1px 2px rgba(18,48,44,0.04); transition: transform 0.25s ease, box-shadow 0.25s ease; overflow: hidden; display: flex; flex-direction: column; }
 .tour-card:hover { transform: translateY(-4px); box-shadow: 0 10px 24px rgba(18,48,44,0.1); }
 .tour-card svg { width: 44px; height: 44px; margin-bottom: var(--space-2); }

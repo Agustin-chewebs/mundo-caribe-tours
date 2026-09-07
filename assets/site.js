@@ -41,6 +41,12 @@
       reveals.forEach(function (el) { el.classList.add('visible'); });
       return;
     }
+    // threshold 0 (not e.g. 0.15): a .reveal section taller than the viewport
+    // can never reach a fixed intersection RATIO like 0.15, because the max
+    // achievable ratio is capped at (viewport height / section height) — a
+    // tall section would then sit at opacity:0 forever, no matter how much
+    // you scroll. threshold 0 fires as soon as a single pixel is visible, so
+    // it works regardless of how tall the revealed content is.
     var obs = new IntersectionObserver(function (entries) {
       entries.forEach(function (entry) {
         if (entry.isIntersecting) {
@@ -48,7 +54,7 @@
           obs.unobserve(entry.target);
         }
       });
-    }, { threshold: 0.15 });
+    }, { threshold: 0, rootMargin: '0px 0px -10% 0px' });
     reveals.forEach(function (el) { obs.observe(el); });
   }
 
@@ -438,5 +444,150 @@
     initReveal();
     injectCartUI();
     initBooking();
+    initNavDropdown();
+    initCarousels();
   });
+
+  // ===========================================================================
+  // NAV "TOURS" DROPDOWN (categories + "Ver todos los tours")
+  // ===========================================================================
+
+  function initNavDropdown() {
+    var dropdowns = document.querySelectorAll('.nav-dropdown');
+    dropdowns.forEach(function (dd) {
+      var trigger = dd.querySelector('.nav-dropdown-trigger');
+      if (!trigger) return;
+      function close() {
+        dd.classList.remove('open');
+        trigger.setAttribute('aria-expanded', 'false');
+      }
+      function toggle(e) {
+        e.stopPropagation();
+        var willOpen = !dd.classList.contains('open');
+        dropdowns.forEach(function (other) { other.classList.remove('open'); });
+        if (willOpen) {
+          dd.classList.add('open');
+          trigger.setAttribute('aria-expanded', 'true');
+        } else {
+          close();
+        }
+      }
+      trigger.addEventListener('click', toggle);
+      dd.addEventListener('keydown', function (e) {
+        if (e.key === 'Escape') { close(); trigger.focus(); }
+      });
+    });
+    document.addEventListener('click', function () {
+      dropdowns.forEach(function (dd) { dd.classList.remove('open'); });
+    });
+  }
+
+  // ===========================================================================
+  // HORIZONTAL DRAG CAROUSEL — infinite loop via cloned card sets
+  // ===========================================================================
+
+  function initCarousels() {
+    var wraps = document.querySelectorAll('.tour-carousel-wrap');
+    wraps.forEach(function (wrap) {
+      var track = wrap.querySelector('.tour-carousel');
+      if (!track) return;
+      var originalCards = Array.prototype.slice.call(track.children);
+      // fewer than 2 cards: nothing to loop, leave as a plain (non-scrolling) row
+      if (originalCards.length < 2) return;
+
+      // triple the set: [clone][originals][clone] so we can silently jump
+      // between equivalent scroll positions and never hit a hard edge
+      var beforeFrag = document.createDocumentFragment();
+      var afterFrag = document.createDocumentFragment();
+      originalCards.forEach(function (card) { beforeFrag.appendChild(card.cloneNode(true)); });
+      originalCards.forEach(function (card) { afterFrag.appendChild(card.cloneNode(true)); });
+      track.insertBefore(beforeFrag, track.firstChild);
+      track.appendChild(afterFrag);
+
+      var setWidth = 0;
+      function measure() {
+        setWidth = track.scrollWidth / 3;
+      }
+      measure();
+      wrap.scrollLeft = setWidth; // start on the middle (real) set
+
+      var isDown = false, dragged = false, startX = 0, startScroll = 0;
+      var lastX = 0, lastT = 0, velocity = 0, momentumId = null;
+
+      function cancelMomentum() {
+        if (momentumId) { cancelAnimationFrame(momentumId); momentumId = null; }
+      }
+      function startMomentum() {
+        var vel = velocity * 16;
+        function step() {
+          vel *= 0.95;
+          wrap.scrollLeft -= vel;
+          if (Math.abs(vel) > 0.5) momentumId = requestAnimationFrame(step);
+          else momentumId = null;
+        }
+        if (Math.abs(vel) > 0.5) momentumId = requestAnimationFrame(step);
+      }
+      function endDrag() {
+        if (!isDown) return;
+        isDown = false;
+        wrap.classList.remove('dragging');
+        if (dragged) startMomentum();
+      }
+
+      // seamless loop: when the scroll position drifts into either clone
+      // set, jump it back by exactly one set-width. Also nudge startScroll
+      // by the same amount so an in-progress drag doesn't fight the jump
+      // on the next mousemove tick.
+      wrap.addEventListener('scroll', function () {
+        if (setWidth <= 0) return;
+        if (wrap.scrollLeft <= 0) {
+          wrap.scrollLeft += setWidth;
+          startScroll += setWidth;
+        } else if (wrap.scrollLeft >= setWidth * 2) {
+          wrap.scrollLeft -= setWidth;
+          startScroll -= setWidth;
+        }
+      });
+
+      // ---- mouse (desktop) ----
+      wrap.addEventListener('mousedown', function (e) {
+        isDown = true; dragged = false;
+        startX = e.pageX; startScroll = wrap.scrollLeft;
+        lastX = e.pageX; lastT = Date.now(); velocity = 0;
+        wrap.classList.add('dragging');
+        cancelMomentum();
+      });
+      window.addEventListener('mousemove', function (e) {
+        if (!isDown) return;
+        e.preventDefault();
+        var dx = e.pageX - startX;
+        if (Math.abs(dx) > 5) dragged = true;
+        wrap.scrollLeft = startScroll - dx;
+        var now = Date.now(), dt = now - lastT;
+        if (dt > 0) { velocity = (e.pageX - lastX) / dt; lastT = now; lastX = e.pageX; }
+      });
+      window.addEventListener('mouseup', endDrag);
+      wrap.addEventListener('mouseleave', endDrag);
+
+      // ---- touch (mobile): native scroll already works, just track drag
+      // distance so we can tell a swipe apart from a tap and not accidentally
+      // open a tour card ----
+      var touchStartX = 0;
+      wrap.addEventListener('touchstart', function (e) {
+        touchStartX = e.touches[0].pageX; dragged = false;
+      }, { passive: true });
+      wrap.addEventListener('touchmove', function (e) {
+        if (Math.abs(e.touches[0].pageX - touchStartX) > 8) dragged = true;
+      }, { passive: true });
+
+      // swallow the click that follows a real drag/swipe so cards don't
+      // get "activated" by accident
+      wrap.addEventListener('click', function (e) {
+        if (dragged) { e.preventDefault(); e.stopPropagation(); }
+        dragged = false;
+      }, true);
+
+      window.addEventListener('resize', measure);
+    });
+  }
 })();
