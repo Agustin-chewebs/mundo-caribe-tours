@@ -420,7 +420,8 @@ def render_breadcrumb(items):
 
 
 def page_shell(head, body):
-    return f'''<!DOCTYPE html>
+    return f'''<!-- deploy-test-2026-09-08 -->
+<!DOCTYPE html>
 <html lang="es">
 <head>
 {head}</head>
