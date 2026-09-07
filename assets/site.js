@@ -7,8 +7,19 @@
   var LS_HOTEL = 'mc_hotel';
   var LS_ROOM = 'mc_room';
   var LS_MAPS = 'mc_maps';
+  var LS_CART_VERSION = 'mc_cart_v';
+  var CART_VERSION = 2; // bump this whenever the shape of a cart item changes, to auto-clear stale carts
 
   // ---------- storage helpers ----------
+  function ensureCartVersion() {
+    try {
+      var v = parseInt(localStorage.getItem(LS_CART_VERSION), 10);
+      if (v !== CART_VERSION) {
+        localStorage.removeItem(LS_CART);
+        localStorage.setItem(LS_CART_VERSION, String(CART_VERSION));
+      }
+    } catch (e) {}
+  }
   function getCart() {
     try { return JSON.parse(localStorage.getItem(LS_CART)) || []; } catch (e) { return []; }
   }
@@ -423,6 +434,7 @@
   }
 
   document.addEventListener('DOMContentLoaded', function () {
+    ensureCartVersion();
     initReveal();
     injectCartUI();
     initBooking();
