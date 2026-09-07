@@ -7,7 +7,6 @@
   var LS_HOTEL = 'mc_hotel';
   var LS_ROOM = 'mc_room';
   var LS_MAPS = 'mc_maps';
-  var LS_PERSONS = 'mc_persons';
 
   // ---------- storage helpers ----------
   function getCart() {
@@ -159,18 +158,17 @@
     var hotel = getStr(LS_HOTEL);
     var room = getStr(LS_ROOM);
     var maps = getStr(LS_MAPS);
-    var persons = getStr(LS_PERSONS);
+    var totalPersons = cart.reduce(function (sum, item) { return sum + (item.headcount || 0); }, 0);
 
     checkoutEl.innerHTML =
-      '<div class="mc-cart-total-row"><span>Total estimado</span><strong>' + usd(total) + (hasQuote ? ' + ítems a cotizar' : '') + '</strong></div>' +
+      '<div class="mc-cart-total-row"><span>Total</span><strong>' + usd(total) + (hasQuote ? ' + ítems a cotizar' : '') + '</strong></div>' +
+      '<p class="mc-cart-persons">Personas: ' + totalPersons + '</p>' +
       '<div class="booking-field-row">' +
       '<div class="booking-field"><label for="mc-hotel">Hotel / lugar de hospedaje</label>' +
       '<input type="text" id="mc-hotel" placeholder="Ej: Hotel Grand Sirenis" value="' + hotel.replace(/"/g, '&quot;') + '"></div>' +
       '<div class="booking-field booking-field-narrow"><label for="mc-room">N° de habitación</label>' +
       '<input type="text" id="mc-room" placeholder="Ej: 204" value="' + room.replace(/"/g, '&quot;') + '"></div>' +
       '</div>' +
-      '<div class="booking-field"><label for="mc-persons">Cantidad de personas del grupo</label>' +
-      '<input type="number" id="mc-persons" min="1" value="' + (persons || '1') + '"></div>' +
       '<div class="booking-field">' +
       '<button type="button" class="btn-secondary mc-loc-btn" id="mc-share-location">📍 Compartir mi ubicación</button>' +
       '<div id="mc-loc-status" class="mc-loc-status">' + (maps ? '✓ Ubicación agregada' : '') + '</div>' +
@@ -180,7 +178,6 @@
 
     document.getElementById('mc-hotel').addEventListener('input', function (e) { setStr(LS_HOTEL, e.target.value); });
     document.getElementById('mc-room').addEventListener('input', function (e) { setStr(LS_ROOM, e.target.value); });
-    document.getElementById('mc-persons').addEventListener('input', function (e) { setStr(LS_PERSONS, e.target.value); });
     document.getElementById('mc-share-location').addEventListener('click', shareLocation);
     document.getElementById('mc-clear-cart').addEventListener('click', function () {
       if (confirm('¿Vaciar todo el carrito?')) { setCart([]); updateCartBadge(); renderCartDrawer(); }
@@ -210,20 +207,20 @@
     var hotel = getStr(LS_HOTEL);
     var room = getStr(LS_ROOM);
     var maps = getStr(LS_MAPS);
-    var persons = getStr(LS_PERSONS);
     var lines = ['¡Hola! Quiero reservar estos tours:', ''];
     var total = 0;
+    var totalPersons = 0;
     cart.forEach(function (item, i) {
       lines.push((i + 1) + '. ' + item.name);
       lines.push('   ' + item.detail);
       lines.push('   ' + (typeof item.total === 'number' ? usd(item.total) + ' USD' : 'A cotizar'));
       if (typeof item.total === 'number') total += item.total;
-      lines.push('   ' + item.url);
+      totalPersons += item.headcount || 0;
       lines.push('');
     });
-    lines.push('Total estimado: ' + usd(total) + ' USD');
+    lines.push('Total: ' + usd(total) + ' USD');
+    lines.push('Personas: ' + totalPersons);
     if (hotel) lines.push('Hotel: ' + hotel + (room ? ' · Habitación: ' + room : ''));
-    if (persons) lines.push('Personas del grupo: ' + persons);
     if (maps) lines.push('Ubicación: ' + maps);
     window.open(waLink(lines.join('\n')), '_blank', 'noopener');
   }
@@ -304,7 +301,7 @@
     }
 
     if (data.type !== 'quote' && data.type !== 'duration_group') {
-      html += '<div class="booking-total-row"><span class="label">Total estimado</span><span class="total" id="bw-total">' + usd(calcTotal()) + '</span></div>';
+      html += '<div class="booking-total-row"><span class="label">Total</span><span class="total" id="bw-total">' + usd(calcTotal()) + '</span></div>';
     }
 
     html += '<div class="booking-field-row">' +
@@ -384,11 +381,21 @@
     }
 
     function detailText() {
-      if (data.type === 'adult_child') return fmtDate(state.date) + ' · ' + state.adults + ' adultos, ' + state.children + ' niños' + infantsSuffix();
+      if (data.type === 'adult_child') {
+        var who = state.adults + (state.adults === 1 ? ' adulto' : ' adultos');
+        if (state.children > 0) who += ', ' + state.children + (state.children === 1 ? ' niño' : ' niños');
+        return fmtDate(state.date) + ' · ' + who + infantsSuffix();
+      }
       if (data.type === 'tiers') return fmtDate(state.date) + ' · ' + data.tiers[state.tierIndex].label + ' · ' + state.persons + ' personas' + infantsSuffix();
       if (data.type === 'duration_group') return fmtDate(state.date) + ' · ' + data.tiers[state.tierIndex].label + ' · ' + state.persons + ' pasajeros';
       if (data.type === 'per_person') return fmtDate(state.date) + ' · ' + state.persons + ' personas' + infantsSuffix();
       return fmtDate(state.date) + ' · ' + state.persons + ' personas (cotización)';
+    }
+
+    function headcount() {
+      if (data.type === 'adult_child') return state.adults + state.children;
+      if (data.type === 'quote') return state.persons;
+      return state.persons;
     }
 
     document.getElementById('bw-cta').addEventListener('click', function () {
@@ -397,6 +404,7 @@
         name: data.name,
         detail: detailText(),
         total: data.type === 'quote' ? null : calcTotal(),
+        headcount: headcount(),
         url: pageUrl,
         photo: photoSrc,
       });

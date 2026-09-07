@@ -173,8 +173,9 @@ section { padding: var(--space-6) 0; }
 .mc-cart-remove { background: none; border: none; color: rgba(18,48,44,0.4); font-size: 1.3rem; cursor: pointer; line-height: 1; padding: 2px 6px; flex-shrink: 0; }
 .mc-cart-remove:hover { color: #b0473f; }
 .mc-cart-checkout { margin-top: var(--space-3); padding-top: var(--space-3); border-top: 1px solid rgba(28,74,68,0.14); }
-.mc-cart-total-row { display: flex; justify-content: space-between; align-items: baseline; margin-bottom: var(--space-2); }
+.mc-cart-total-row { display: flex; justify-content: space-between; align-items: baseline; }
 .mc-cart-total-row strong { font-size: 1.3rem; color: var(--teal-deep); }
+.mc-cart-persons { font-size: 0.8rem; color: rgba(18,48,44,0.6); margin: 4px 0 var(--space-2); }
 .mc-cart-checkout .btn-primary, .mc-cart-checkout .btn-secondary { width: 100%; text-align: center; }
 .mc-clear-cart { display: block; margin: 10px auto 0; background: none; border: none; font-size: 0.78rem; color: rgba(18,48,44,0.5); text-decoration: underline; cursor: pointer; }
 
