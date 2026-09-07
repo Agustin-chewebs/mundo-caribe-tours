@@ -158,7 +158,8 @@
     var hotel = getStr(LS_HOTEL);
     var room = getStr(LS_ROOM);
     var maps = getStr(LS_MAPS);
-    var totalPersons = cart.reduce(function (sum, item) { return sum + (item.headcount || 0); }, 0);
+    // "Personas" = tamaño del grupo, no la suma entre tours (las mismas personas pueden hacer varios tours)
+    var totalPersons = cart.reduce(function (max, item) { return Math.max(max, item.headcount || 0); }, 0);
 
     checkoutEl.innerHTML =
       '<div class="mc-cart-total-row"><span>Total</span><strong>' + usd(total) + (hasQuote ? ' + ítems a cotizar' : '') + '</strong></div>' +
@@ -215,7 +216,8 @@
       lines.push('   ' + item.detail);
       lines.push('   ' + (typeof item.total === 'number' ? usd(item.total) + ' USD' : 'A cotizar'));
       if (typeof item.total === 'number') total += item.total;
-      totalPersons += item.headcount || 0;
+      // "Personas" = tamaño del grupo, no la suma entre tours (las mismas personas pueden hacer varios tours)
+      totalPersons = Math.max(totalPersons, item.headcount || 0);
       lines.push('');
     });
     lines.push('Total: ' + usd(total) + ' USD');
