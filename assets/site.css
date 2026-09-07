@@ -62,7 +62,7 @@ ul { margin: 0; padding: 0; list-style: none; }
 .hero-logo { display: flex; justify-content: center; align-items: center; }
 .hero-logo img { width: 100%; height: auto; max-width: 340px; object-fit: contain; }
 
-section { padding: var(--space-6) 0; }
+section { padding: var(--space-6) 0; scroll-margin-top: 84px; }
 .eyebrow { font-size: 0.78rem; letter-spacing: 0.14em; text-transform: uppercase; color: var(--teal-mid); margin-bottom: var(--space-2); font-weight: 500; }
 .section-head { max-width: 62ch; margin-bottom: var(--space-5); }
 .section-head h2 { font-size: clamp(1.7rem, 3vw, 2.3rem); }
@@ -76,8 +76,26 @@ section { padding: var(--space-6) 0; }
 .breadcrumb a { color: var(--teal-mid); }
 .breadcrumb a:hover { text-decoration: underline; }
 
+/* ---------- tours toolbar (category dropdown + ver todos) ---------- */
+.tours-toolbar { display: flex; align-items: center; justify-content: space-between; gap: var(--space-3); flex-wrap: wrap; margin-bottom: var(--space-4); }
+.cat-dropdown { padding: 10px 14px; border-radius: 999px; border: 1.5px solid rgba(28,74,68,0.2); background: #fff; color: var(--teal-deep); font-family: inherit; font-size: 0.85rem; font-weight: 500; cursor: pointer; }
+.cat-dropdown:focus { border-color: var(--teal-mid); }
+
 /* ---------- tour cards ---------- */
 .tour-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(230px, 1fr)); gap: var(--space-3); }
+
+/* ---------- horizontal drag carousel ---------- */
+.tour-carousel-wrap { overflow-x: auto; overflow-y: hidden; -webkit-overflow-scrolling: touch; scrollbar-width: none; cursor: grab; margin: 0 calc(-1 * var(--space-3)); padding: 4px var(--space-3) var(--space-2); user-select: none; }
+.tour-carousel-wrap::-webkit-scrollbar { display: none; }
+.tour-carousel-wrap.dragging { cursor: grabbing; }
+.tour-carousel-wrap.dragging .tour-card { pointer-events: none; }
+.tour-carousel { display: flex; gap: var(--space-3); }
+.tour-carousel .tour-card { flex: 0 0 260px; }
+
+/* ---------- "todos los tours" page ---------- */
+.all-tours-group { margin-top: var(--space-6); }
+.all-tours-group:first-child { margin-top: 0; }
+.all-tours-group h2 { font-size: 1.4rem; margin-bottom: var(--space-3); scroll-margin-top: 90px; }
 .tour-card { background: #fff; border: 1px solid rgba(28, 74, 68, 0.12); border-radius: var(--radius); padding: var(--space-3); box-shadow: 0 1px 2px rgba(18,48,44,0.04); transition: transform 0.25s ease, box-shadow 0.25s ease; overflow: hidden; display: flex; flex-direction: column; }
 .tour-card:hover { transform: translateY(-4px); box-shadow: 0 10px 24px rgba(18,48,44,0.1); }
 .tour-card svg { width: 44px; height: 44px; margin-bottom: var(--space-2); }

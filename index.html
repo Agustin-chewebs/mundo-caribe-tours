@@ -38,6 +38,7 @@
     <a class="brand" href="/"><img src="/assets/logo.webp" alt="Mundo Caribe Tours">Mundo Caribe Tours</a>
     <ul class="nav-links">
       <li><a href="/#tours">Tours</a></li>
+      <li><a href="/todos-los-tours/">Ver todos</a></li>
       <li><a href="/#contacto">Contacto</a></li>
     </ul>
     <a class="btn-whatsapp" href="https://wa.me/529841191147?text=Hola%2C%20quisiera%20informaci%C3%B3n%20sobre%20los%20tours." target="_blank" rel="noopener">WhatsApp</a>
@@ -64,17 +65,17 @@
 <section id="tours" class="reveal">
   <div class="container">
     <div class="section-head">
-      <p class="eyebrow">Los 4 Fantásticos</p>
+      <p class="eyebrow">Destacados</p>
       <h2>Nuestros tours más pedidos</h2>
-      <p>Elegí un tour para ver el detalle completo, precio y reservar directo por WhatsApp.</p>
+      <p>Elegí un tour para ver el detalle completo, precio y reservar directo por WhatsApp. Deslizá para ver más →</p>
     </div>
-    <div class="tour-grid">
-      <a class="tour-card" href="/tour/chichen-itza/">
-        <img class="tour-card-photo" src="/assets/tours/chichen-itza.jpg" alt="Chichén Itzá – Historia, Naturaleza y Cultura">
+    <div class="tours-toolbar"><select class="cat-dropdown" id="cat-dropdown" aria-label="Ir a categoría"><option value="" disabled selected>Ir a categoría…</option><option data-target="cat-ruinas" data-url="/categoria/cultura-maya-ruinas/">Cultura Maya & Ruinas</option><option data-target="cat-islas" data-url="/categoria/islas-catamaranes/">Islas & Catamaranes</option><option data-target="cat-aventura" data-url="/categoria/aventura-acuatica/">Aventura Acuática</option><option data-target="cat-pesca" data-url="/categoria/pesca-deportiva/">Pesca Deportiva</option><option data-target="cat-xcaret" data-url="/categoria/xperiencias-xcaret/">Xperiencias by Xcaret</option><option data-target="cat-transportes" data-url="/categoria/transportes/">Transportes</option><option data-target="cat-vuelos" data-url="/categoria/vuelos-hoteles/">Vuelos y Hoteles</option></select><a class="see-all" href="/todos-los-tours/">Ver todos los tours →</a></div>
+    <div class="tour-carousel-wrap"><div class="tour-carousel"><a class="tour-card" href="/tour/chichen-itza-plus/">
+        <img class="tour-card-photo" src="/assets/tours/chichen-itza-plus.jpg" alt="Chichén Itzá Plus – Historia, Naturaleza y Cultura en un Solo Día">
         <div class="tour-card-body">
-        <h3>Chichén Itzá – Historia, Naturaleza y Cultura</h3>
-        <p class="desc">Guía certificado, cenote Oxman y tiempo libre en Valladolid, Pueblo Mágico.</p>
-        <div class="card-price">$97 adulto · $78 niño</div>
+        <h3>Chichén Itzá Plus – Historia, Naturaleza y Cultura en un Solo Día</h3>
+        <p class="desc">Una de las 7 Maravillas del Mundo + 2 cenotes y comida buffet en hacienda.</p>
+        <div class="card-price">$109 adulto · $90 niño</div>
         <span class="tour-link">Ver detalles →</span>
         </div>
       </a><a class="tour-card" href="/tour/isla-mujeres-catamaran/">
@@ -93,20 +94,27 @@
         <div class="card-price">$97 por persona</div>
         <span class="tour-link">Ver detalles →</span>
         </div>
-      </a>
-      <div class="tour-card">
+      </a><a class="tour-card" href="/tour/cozumel/">
+        <img class="tour-card-photo" src="/assets/tours/cozumel.jpg" alt="Cozumel - El Cielo y El Cielito">
         <div class="tour-card-body">
-        <h3>Xcaret</h3>
-        <p class="desc">Parque México · Xcaret Básico</p>
-        <span class="quote-badge">Cotización personalizada</span>
-        <a class="tour-link" href="https://wa.me/529841191147?text=%C2%A1Hola%21%20Quiero%20pedir%20una%20cotizaci%C3%B3n%20para%3A%20Xcaret" target="_blank" rel="noopener">Pedir cotización →</a>
+        <h3>Cozumel - El Cielo y El Cielito</h3>
+        <p class="desc">Catamarán exclusivo con paradas de snorkel en El Cielo, El Cielito y Chankanaab.</p>
+        <div class="card-price">$109 por persona</div>
+        <span class="tour-link">Ver detalles →</span>
         </div>
-      </div>
-    </div>
+      </a><a class="tour-card" href="/tour/tiburon-ballena/">
+        <img class="tour-card-photo" src="/assets/tours/tiburon-ballena.jpg" alt="Tiburón Ballena">
+        <div class="tour-card-body">
+        <h3>Tiburón Ballena</h3>
+        <p class="desc">Nadá junto al pez más grande del mundo. Tour 100% regulado y guías certificados.</p>
+        <div class="card-price">$163 por persona</div>
+        <span class="tour-link">Ver detalles →</span>
+        </div>
+      </a><a class="tour-card" href="https://wa.me/529841191147?text=%C2%A1Hola%21%20Quiero%20pedir%20una%20cotizaci%C3%B3n%20para%3A%20Xcaret" target="_blank" rel="noopener"><div class="tour-card-body"><h3>Xcaret</h3><p class="desc">Parque México · Xcaret Básico</p><span class="quote-badge">Cotización personalizada</span><span class="tour-link">Pedir cotización →</span></div></a></div></div>
   </div>
 </section>
 
-<section class="reveal">
+<section id="cat-ruinas" class="reveal">
   <div class="container">
     <div class="section-head-row">
       <div class="section-head">
@@ -115,8 +123,7 @@
       </div>
       <a class="see-all" href="/categoria/cultura-maya-ruinas/">Ver todos →</a>
     </div>
-    <div class="tour-grid">
-      <a class="tour-card" href="/tour/chichen-itza/">
+    <div class="tour-carousel-wrap"><div class="tour-carousel"><a class="tour-card" href="/tour/chichen-itza/">
         <img class="tour-card-photo" src="/assets/tours/chichen-itza.jpg" alt="Chichén Itzá – Historia, Naturaleza y Cultura">
         <div class="tour-card-body">
         <h3>Chichén Itzá – Historia, Naturaleza y Cultura</h3>
@@ -140,12 +147,11 @@
         <div class="card-price">$55 por persona</div>
         <span class="tour-link">Ver detalles →</span>
         </div>
-      </a>
-    </div>
+      </a></div></div>
   </div>
 </section>
 
-<section class="reveal">
+<section id="cat-islas" class="reveal">
   <div class="container">
     <div class="section-head-row">
       <div class="section-head">
@@ -154,8 +160,7 @@
       </div>
       <a class="see-all" href="/categoria/islas-catamaranes/">Ver todos →</a>
     </div>
-    <div class="tour-grid">
-      <a class="tour-card" href="/tour/holbox/">
+    <div class="tour-carousel-wrap"><div class="tour-carousel"><a class="tour-card" href="/tour/holbox/">
         <img class="tour-card-photo" src="/assets/tours/holbox.jpg" alt="Holbox: Aventura en Islas y Naturaleza">
         <div class="tour-card-body">
         <h3>Holbox: Aventura en Islas y Naturaleza</h3>
@@ -179,12 +184,11 @@
         <div class="card-price">$75 por persona</div>
         <span class="tour-link">Ver detalles →</span>
         </div>
-      </a>
-    </div>
+      </a></div></div>
   </div>
 </section>
 
-<section class="reveal">
+<section id="cat-aventura" class="reveal">
   <div class="container">
     <div class="section-head-row">
       <div class="section-head">
@@ -193,8 +197,7 @@
       </div>
       <a class="see-all" href="/categoria/aventura-acuatica/">Ver todos →</a>
     </div>
-    <div class="tour-grid">
-      <a class="tour-card" href="/tour/atv-casa-jaguar/">
+    <div class="tour-carousel-wrap"><div class="tour-carousel"><a class="tour-card" href="/tour/atv-casa-jaguar/">
         <img class="tour-card-photo" src="/assets/tours/atv-casa-jaguar.jpg" alt="ATV's Casa Jaguar – Aventura y Cenotes">
         <div class="tour-card-body">
         <h3>ATV's Casa Jaguar – Aventura y Cenotes</h3>
@@ -218,19 +221,17 @@
         <div class="card-price">$72 por persona</div>
         <span class="tour-link">Ver detalles →</span>
         </div>
-      </a>
-    </div>
+      </a></div></div>
   </div>
 </section>
 
-<section class="reveal">
+<section id="cat-especiales" class="reveal">
   <div class="container">
     <div class="section-head">
       <p class="eyebrow">Servicios especiales</p>
       <h2>Todo lo que necesitás para tu viaje</h2>
     </div>
-    <div class="tour-grid">
-      <div class="tour-card">
+    <div class="tour-carousel-wrap"><div class="tour-carousel"><div class="tour-card">
         <div class="tour-card-body">
         <h3>Pesca Deportiva</h3>
         <p class="desc">Salidas en yate privado desde Cancún, por hora o compartidas.</p>
@@ -254,8 +255,7 @@
         <p class="desc">Cotizamos tus vuelos y tu estadía para armar el viaje completo.</p>
         <a class="tour-link" href="/categoria/vuelos-hoteles/">Ver más →</a>
         </div>
-      </div>
-    </div>
+      </div></div></div>
   </div>
 </section>
 <section id="contacto" class="reveal">

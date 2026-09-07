@@ -307,8 +307,8 @@ QUOTE_ITEMS = {
     ],
 }
 
-# Featured on homepage (Los 4 Fantásticos): 3 real tour slugs + a note pointing to Xcaret category
-FEATURED_SLUGS = ['chichen-itza', 'isla-mujeres-catamaran', 'holbox']
+# Featured on homepage ("Tours más pedidos"): real tour slugs + a quote card for Xcaret
+FEATURED_SLUGS = ['chichen-itza-plus', 'isla-mujeres-catamaran', 'holbox', 'cozumel', 'tiburon-ballena']
 
 # ---------------------------------------------------------------------------
 # HELPERS
@@ -389,6 +389,7 @@ def render_nav():
     <a class="brand" href="/"><img src="/assets/logo.webp" alt="Mundo Caribe Tours">Mundo Caribe Tours</a>
     <ul class="nav-links">
       <li><a href="/#tours">Tours</a></li>
+      <li><a href="/todos-los-tours/">Ver todos</a></li>
       <li><a href="/#contacto">Contacto</a></li>
     </ul>
     <a class="btn-whatsapp" href="{wa_link(wa_text)}" target="_blank" rel="noopener">WhatsApp</a>
@@ -476,6 +477,30 @@ def render_quote_card(item):
       </a>'''
 
 
+def carousel_wrap(cards_html):
+    return f'<div class="tour-carousel-wrap"><div class="tour-carousel">{cards_html}</div></div>'
+
+
+def grid_wrap(cards_html):
+    return f'<div class="tour-grid">{cards_html}</div>'
+
+
+def category_dropdown():
+    opts = '<option value="" disabled selected>Ir a categoría…</option>'
+    for c in CATEGORIES:
+        opts += f'<option data-target="cat-{c["key"]}" data-url="/categoria/{c["slug"]}/">{c["title"]}</option>'
+    return ('<div class="tours-toolbar">'
+            '<select class="cat-dropdown" id="cat-dropdown" aria-label="Ir a categoría">' + opts + '</select>'
+            '<a class="see-all" href="/todos-los-tours/">Ver todos los tours →</a>'
+            '</div>')
+
+
+def category_items_html(cat):
+    if cat['key'] in QUOTE_ITEMS:
+        return ''.join(render_quote_card(item) for item in QUOTE_ITEMS[cat['key']])
+    return ''.join(render_tour_card(t) for t in TOURS if t['category'] == cat['key'])
+
+
 # ---------------------------------------------------------------------------
 # HOMEPAGE
 # ---------------------------------------------------------------------------
@@ -493,7 +518,7 @@ def render_home():
         tours_in_cat = [t for t in TOURS if t['category'] == key][:3]
         cards = ''.join(render_tour_card(t) for t in tours_in_cat)
         cat_sections += f'''
-<section class="reveal">
+<section id="cat-{key}" class="reveal">
   <div class="container">
     <div class="section-head-row">
       <div class="section-head">
@@ -502,12 +527,15 @@ def render_home():
       </div>
       <a class="see-all" href="/categoria/{cat['slug']}/">Ver todos →</a>
     </div>
-    <div class="tour-grid">
-      {cards}
-    </div>
+    {carousel_wrap(cards)}
   </div>
 </section>
 '''
+
+    xcaret_card = ('<a class="tour-card" href="' + wa_link('¡Hola! Quiero pedir una cotización para: Xcaret') + '" target="_blank" rel="noopener">'
+                   '<div class="tour-card-body"><h3>Xcaret</h3><p class="desc">Parque México · Xcaret Básico</p>'
+                   '<span class="quote-badge">Cotización personalizada</span>'
+                   '<span class="tour-link">Pedir cotización →</span></div></a>')
 
     special_cards = ''
     for key in ['pesca', 'xcaret', 'transportes', 'vuelos']:
@@ -542,33 +570,22 @@ def render_home():
 <section id="tours" class="reveal">
   <div class="container">
     <div class="section-head">
-      <p class="eyebrow">Los 4 Fantásticos</p>
+      <p class="eyebrow">Destacados</p>
       <h2>Nuestros tours más pedidos</h2>
-      <p>Elegí un tour para ver el detalle completo, precio y reservar directo por WhatsApp.</p>
+      <p>Elegí un tour para ver el detalle completo, precio y reservar directo por WhatsApp. Deslizá para ver más →</p>
     </div>
-    <div class="tour-grid">
-      {featured_cards}
-      <div class="tour-card">
-        <div class="tour-card-body">
-        <h3>Xcaret</h3>
-        <p class="desc">Parque México · Xcaret Básico</p>
-        <span class="quote-badge">Cotización personalizada</span>
-        <a class="tour-link" href="{wa_link('¡Hola! Quiero pedir una cotización para: Xcaret')}" target="_blank" rel="noopener">Pedir cotización →</a>
-        </div>
-      </div>
-    </div>
+    {category_dropdown()}
+    {carousel_wrap(featured_cards + xcaret_card)}
   </div>
 </section>
 {cat_sections}
-<section class="reveal">
+<section id="cat-especiales" class="reveal">
   <div class="container">
     <div class="section-head">
       <p class="eyebrow">Servicios especiales</p>
       <h2>Todo lo que necesitás para tu viaje</h2>
     </div>
-    <div class="tour-grid">
-      {special_cards}
-    </div>
+    {carousel_wrap(special_cards)}
   </div>
 </section>
 ''' + render_footer()
@@ -586,25 +603,20 @@ def render_category_page(cat):
     path = f'/categoria/{cat["slug"]}/'
     head = render_head(title, desc, path)
 
-    if cat['key'] in QUOTE_ITEMS:
-        cards = ''.join(render_quote_card(item) for item in QUOTE_ITEMS[cat['key']])
-    else:
-        tours_in_cat = [t for t in TOURS if t['category'] == cat['key']]
-        cards = ''.join(render_tour_card(t) for t in tours_in_cat)
+    cards = category_items_html(cat)
 
     body = render_nav() + f'''
-<section class="category-hero reveal">
+<section id="cat-{cat['key']}" class="category-hero reveal">
   <div class="container">
     {render_breadcrumb([('Inicio', '/'), (cat['title'], None)])}
     <h1>{cat['title']}</h1>
     <p>{cat['intro']}</p>
+    {category_dropdown()}
   </div>
 </section>
 <section class="reveal">
   <div class="container">
-    <div class="tour-grid">
-      {cards}
-    </div>
+    {carousel_wrap(cards)}
   </div>
 </section>
 ''' + render_footer()
@@ -693,13 +705,47 @@ def render_tour_page(tour):
 # MAIN
 # ---------------------------------------------------------------------------
 
+def render_all_tours_page():
+    title = 'Todos los tours — Mundo Caribe Tours'
+    desc = 'La lista completa de tours y excursiones de Mundo Caribe Tours en la Riviera Maya, agrupados por categoría.'
+    path = '/todos-los-tours/'
+    head = render_head(title, desc, path)
+
+    sections = ''
+    for cat in CATEGORIES:
+        sections += f'''
+<div class="all-tours-group">
+  <h2 id="cat-{cat['key']}">{cat['title']}</h2>
+  {grid_wrap(category_items_html(cat))}
+</div>
+'''
+
+    body = render_nav() + f'''
+<section class="category-hero reveal">
+  <div class="container">
+    {render_breadcrumb([('Inicio', '/'), ('Todos los tours', None)])}
+    <h1>Todos los tours</h1>
+    <p>La lista completa, sin recortes — {len(TOURS)} tours con precio y detalle, más nuestras experiencias a cotizar.</p>
+  </div>
+</section>
+<section class="reveal">
+  <div class="container">
+    {sections}
+  </div>
+</section>
+''' + render_footer()
+
+    write_file('todos-los-tours/index.html', page_shell(head, body))
+
+
 def main():
     render_home()
     for cat in CATEGORIES:
         render_category_page(cat)
     for tour in TOURS:
         render_tour_page(tour)
-    print(f'Generated: 1 home + {len(CATEGORIES)} category pages + {len(TOURS)} tour pages')
+    render_all_tours_page()
+    print(f'Generated: 1 home + {len(CATEGORIES)} category pages + {len(TOURS)} tour pages + 1 all-tours page')
 
 
 if __name__ == '__main__':
