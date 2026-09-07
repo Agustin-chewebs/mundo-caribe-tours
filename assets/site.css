@@ -116,6 +116,9 @@ section { padding: var(--space-6) 0; }
 .booking-price { font-size: 1.6rem; font-weight: 700; color: var(--teal-deep); margin-top: 4px; }
 .booking-price small { font-size: 0.8rem; font-weight: 400; color: rgba(18,48,44,0.55); }
 .booking-field { margin-top: var(--space-3); }
+.booking-field-row { display: flex; gap: 10px; margin-top: var(--space-3); }
+.booking-field-row .booking-field { margin-top: 0; flex: 1; }
+.booking-field-row .booking-field-narrow { flex: 0 0 92px; }
 .booking-field label { display: block; font-size: 0.78rem; font-weight: 600; text-transform: uppercase; letter-spacing: 0.03em; color: rgba(18,48,44,0.6); margin-bottom: 6px; }
 .booking-field input[type="date"], .booking-field select { width: 100%; padding: 10px 12px; border-radius: 10px; border: 1.5px solid rgba(28,74,68,0.18); font-family: inherit; font-size: 0.92rem; color: var(--ink); background: #fff; }
 .booking-field input[type="date"]:focus, .booking-field select:focus { border-color: var(--teal-mid); }

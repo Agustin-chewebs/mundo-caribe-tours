@@ -5,6 +5,7 @@
 
   var LS_CART = 'mc_cart';
   var LS_HOTEL = 'mc_hotel';
+  var LS_ROOM = 'mc_room';
   var LS_MAPS = 'mc_maps';
   var LS_PERSONS = 'mc_persons';
 
@@ -156,13 +157,18 @@
     });
 
     var hotel = getStr(LS_HOTEL);
+    var room = getStr(LS_ROOM);
     var maps = getStr(LS_MAPS);
     var persons = getStr(LS_PERSONS);
 
     checkoutEl.innerHTML =
       '<div class="mc-cart-total-row"><span>Total estimado</span><strong>' + usd(total) + (hasQuote ? ' + ítems a cotizar' : '') + '</strong></div>' +
+      '<div class="booking-field-row">' +
       '<div class="booking-field"><label for="mc-hotel">Hotel / lugar de hospedaje</label>' +
-      '<input type="text" id="mc-hotel" placeholder="Ej: Hotel Grand Sirenis, Riviera Maya" value="' + hotel.replace(/"/g, '&quot;') + '"></div>' +
+      '<input type="text" id="mc-hotel" placeholder="Ej: Hotel Grand Sirenis" value="' + hotel.replace(/"/g, '&quot;') + '"></div>' +
+      '<div class="booking-field booking-field-narrow"><label for="mc-room">N° de habitación</label>' +
+      '<input type="text" id="mc-room" placeholder="Ej: 204" value="' + room.replace(/"/g, '&quot;') + '"></div>' +
+      '</div>' +
       '<div class="booking-field"><label for="mc-persons">Cantidad de personas del grupo</label>' +
       '<input type="number" id="mc-persons" min="1" value="' + (persons || '1') + '"></div>' +
       '<div class="booking-field">' +
@@ -173,6 +179,7 @@
       '<button type="button" class="mc-clear-cart" id="mc-clear-cart">Vaciar carrito</button>';
 
     document.getElementById('mc-hotel').addEventListener('input', function (e) { setStr(LS_HOTEL, e.target.value); });
+    document.getElementById('mc-room').addEventListener('input', function (e) { setStr(LS_ROOM, e.target.value); });
     document.getElementById('mc-persons').addEventListener('input', function (e) { setStr(LS_PERSONS, e.target.value); });
     document.getElementById('mc-share-location').addEventListener('click', shareLocation);
     document.getElementById('mc-clear-cart').addEventListener('click', function () {
@@ -201,6 +208,7 @@
     var cart = getCart();
     if (cart.length === 0) return;
     var hotel = getStr(LS_HOTEL);
+    var room = getStr(LS_ROOM);
     var maps = getStr(LS_MAPS);
     var persons = getStr(LS_PERSONS);
     var lines = ['¡Hola! Quiero reservar estos tours:', ''];
@@ -214,7 +222,7 @@
       lines.push('');
     });
     lines.push('Total estimado: ' + usd(total) + ' USD');
-    if (hotel) lines.push('Hotel: ' + hotel);
+    if (hotel) lines.push('Hotel: ' + hotel + (room ? ' · Habitación: ' + room : ''));
     if (persons) lines.push('Personas del grupo: ' + persons);
     if (maps) lines.push('Ubicación: ' + maps);
     window.open(waLink(lines.join('\n')), '_blank', 'noopener');
@@ -234,9 +242,11 @@
     var photoEl = document.querySelector('.tour-hero-photo');
     var photoSrc = photoEl ? photoEl.getAttribute('src') : null;
 
-    var state = { date: '', adults: 1, children: 0, persons: 1, tierIndex: 0 };
+    var state = { date: '', adults: 1, children: 0, infants: 0, persons: 1, tierIndex: 0 };
+    var hasInfants = data.type === 'adult_child' || data.type === 'per_person' || data.type === 'tiers';
 
     function calcTotal() {
+      // infants (0-2 años) never add to the price, in any pricing model
       if (data.type === 'adult_child') return state.adults * data.adult + state.children * data.child;
       if (data.type === 'per_person') return state.persons * data.price;
       if (data.type === 'tiers') return state.persons * data.tiers[state.tierIndex].price;
@@ -282,20 +292,27 @@
       html += '<div class="booking-field">' +
         counterRow('adults', 'Adultos', '10 años en adelante') +
         counterRow('children', 'Niños', '3 a 9 años') +
-        '</div>' +
-        '<p class="booking-fineprint">Infantes de 0 a 2 años: sin cargo, no se cuentan en la reserva.</p>';
+        '</div>';
     } else if (data.type !== 'duration_group') {
       html += '<div class="booking-field">' + counterRow('persons', 'Personas', null) + '</div>';
     } else {
       html += '<div class="booking-field">' + counterRow('persons', 'Pasajeros', 'Hasta ' + (data.maxGroup || 7) + ' por embarcación') + '</div>';
     }
 
+    if (hasInfants) {
+      html += '<div class="booking-field">' + counterRow('infants', 'Infantes', '0 a 2 años · sin cargo, pero cuentan para el transporte') + '</div>';
+    }
+
     if (data.type !== 'quote' && data.type !== 'duration_group') {
       html += '<div class="booking-total-row"><span class="label">Total estimado</span><span class="total" id="bw-total">' + usd(calcTotal()) + '</span></div>';
     }
 
-    html += '<div class="booking-field"><label for="bw-hotel">Hotel / lugar de hospedaje</label>' +
-      '<input type="text" id="bw-hotel" placeholder="Ej: Hotel Grand Sirenis, Riviera Maya" value="' + getStr(LS_HOTEL).replace(/"/g, '&quot;') + '"></div>';
+    html += '<div class="booking-field-row">' +
+      '<div class="booking-field"><label for="bw-hotel">Hotel / lugar de hospedaje</label>' +
+      '<input type="text" id="bw-hotel" placeholder="Ej: Hotel Grand Sirenis" value="' + getStr(LS_HOTEL).replace(/"/g, '&quot;') + '"></div>' +
+      '<div class="booking-field booking-field-narrow"><label for="bw-room">N° de habitación</label>' +
+      '<input type="text" id="bw-room" placeholder="Ej: 204" value="' + getStr(LS_ROOM).replace(/"/g, '&quot;') + '"></div>' +
+      '</div>';
     html += '<div class="booking-field">' +
       '<button type="button" class="btn-secondary mc-loc-btn" id="bw-share-location">📍 Compartir mi ubicación</button>' +
       '<div id="bw-loc-status" class="mc-loc-status">' + (getStr(LS_MAPS) ? '✓ Ubicación agregada' : '') + '</div>' +
@@ -313,6 +330,7 @@
 
     document.getElementById('bw-date').addEventListener('change', function (e) { state.date = e.target.value; });
     document.getElementById('bw-hotel').addEventListener('input', function (e) { setStr(LS_HOTEL, e.target.value); });
+    document.getElementById('bw-room').addEventListener('input', function (e) { setStr(LS_ROOM, e.target.value); });
     document.getElementById('bw-share-location').addEventListener('click', function () {
       var status = document.getElementById('bw-loc-status');
       if (!navigator.geolocation) { status.textContent = 'Tu navegador no permite compartir ubicación.'; return; }
@@ -339,6 +357,7 @@
     if (data.type === 'adult_child') { bindCounter('adults', 'adults', 1, 30); bindCounter('children', 'children', 0, 30); }
     else if (data.type !== 'duration_group') bindCounter('persons', 'persons', 1, 30);
     else bindCounter('persons', 'persons', 1, data.maxGroup || 7);
+    if (hasInfants) bindCounter('infants', 'infants', 0, 10);
 
     var tierEls = el.querySelectorAll('.tier-option');
     tierEls.forEach(function (opt) {
@@ -360,11 +379,15 @@
       if (t) t.textContent = usd(calcTotal());
     }
 
+    function infantsSuffix() {
+      return (hasInfants && state.infants > 0) ? ', ' + state.infants + ' infante' + (state.infants > 1 ? 's' : '') : '';
+    }
+
     function detailText() {
-      if (data.type === 'adult_child') return fmtDate(state.date) + ' · ' + state.adults + ' adultos, ' + state.children + ' niños';
-      if (data.type === 'tiers') return fmtDate(state.date) + ' · ' + data.tiers[state.tierIndex].label + ' · ' + state.persons + ' personas';
+      if (data.type === 'adult_child') return fmtDate(state.date) + ' · ' + state.adults + ' adultos, ' + state.children + ' niños' + infantsSuffix();
+      if (data.type === 'tiers') return fmtDate(state.date) + ' · ' + data.tiers[state.tierIndex].label + ' · ' + state.persons + ' personas' + infantsSuffix();
       if (data.type === 'duration_group') return fmtDate(state.date) + ' · ' + data.tiers[state.tierIndex].label + ' · ' + state.persons + ' pasajeros';
-      if (data.type === 'per_person') return fmtDate(state.date) + ' · ' + state.persons + ' personas';
+      if (data.type === 'per_person') return fmtDate(state.date) + ' · ' + state.persons + ' personas' + infantsSuffix();
       return fmtDate(state.date) + ' · ' + state.persons + ' personas (cotización)';
     }
 
