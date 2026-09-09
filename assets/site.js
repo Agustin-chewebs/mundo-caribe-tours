@@ -572,14 +572,25 @@
         isDown = true; dragged = false;
         startX = e.pageX; startScroll = wrap.scrollLeft;
         lastX = e.pageX; lastT = Date.now(); velocity = 0;
-        wrap.classList.add('dragging');
+        // NOTE: do NOT add .dragging here. .dragging sets pointer-events:none
+        // on .tour-card (below) so cards don't intercept the drag — but if we
+        // added it on mousedown, a plain click (mousedown+mouseup with zero
+        // movement) would ALSO get pointer-events:none applied to the <a>
+        // mid-gesture, so the browser's re-hit-test on mouseup/click misses
+        // the anchor entirely and navigation silently never fires. This was
+        // breaking every single click on a carousel card on desktop, not
+        // just real drags. Only add .dragging once we've confirmed an
+        // actual drag (see mousemove below).
         cancelMomentum();
       });
       window.addEventListener('mousemove', function (e) {
         if (!isDown) return;
         e.preventDefault();
         var dx = e.pageX - startX;
-        if (Math.abs(dx) > 5) dragged = true;
+        if (Math.abs(dx) > 5) {
+          dragged = true;
+          wrap.classList.add('dragging');
+        }
         wrap.scrollLeft = startScroll - dx;
         var now = Date.now(), dt = now - lastT;
         if (dt > 0) { velocity = (e.pageX - lastX) / dt; lastT = now; lastX = e.pageX; }
