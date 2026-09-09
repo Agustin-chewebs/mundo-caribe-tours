@@ -56,6 +56,24 @@
       });
     }, { threshold: 0, rootMargin: '0px 0px -10% 0px' });
     reveals.forEach(function (el) { obs.observe(el); });
+
+    // Safety net: IntersectionObserver callbacks can be delayed or skipped
+    // entirely by the browser in edge cases (background/prerendered tabs,
+    // bfcache restores, some mobile browsers under load) — when that
+    // happens the content is stuck at opacity:0 forever, which is worse
+    // than no animation at all. Force everything visible after a short
+    // delay no matter what the observer did, so content is NEVER
+    // permanently invisible.
+    function forceRevealAll() {
+      reveals.forEach(function (el) {
+        el.classList.add('visible');
+      });
+      obs.disconnect();
+    }
+    setTimeout(forceRevealAll, 1200);
+    document.addEventListener('visibilitychange', function () {
+      if (!document.hidden) forceRevealAll();
+    });
   }
 
   function waLink(text) {
