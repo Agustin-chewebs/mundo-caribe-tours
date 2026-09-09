@@ -1,0 +1,10 @@
+{
+  // Cloudflare Workers static-assets config — deploys this whole repo
+  // (the output of scripts/generate_site.py) as-is, no build step needed.
+  "name": "mundo-caribe-tours",
+  "compatibility_date": "2024-09-01",
+  "assets": {
+    "directory": "./",
+    "html_handling": "auto-trailing-slash"
+  }
+}
