@@ -149,6 +149,8 @@ section { padding: var(--space-6) 0; }
 .booking-field input[type="date"], .booking-field input[type="text"], .booking-field input[type="email"], .booking-field input[type="tel"], .booking-field input[type="month"], .booking-field select, .booking-field textarea { width: 100%; padding: 10px 12px; border-radius: 10px; border: 1.5px solid rgba(28,74,68,0.18); font-family: inherit; font-size: 0.92rem; color: var(--ink); background: #fff; }
 .booking-field input:focus, .booking-field select:focus, .booking-field textarea:focus { border-color: var(--teal-mid); outline: none; }
 .booking-field textarea { resize: vertical; }
+.booking-field input.field-invalid, .booking-field select.field-invalid { border-color: #b0473f; }
+.payment-note { font-size: 0.76rem; color: rgba(18,48,44,0.55); margin-top: 6px; }
 .tier-options { display: flex; flex-direction: column; gap: 8px; }
 .tier-option { display: flex; align-items: center; justify-content: space-between; gap: var(--space-2); border: 1.5px solid rgba(28,74,68,0.14); border-radius: 10px; padding: 10px 12px; cursor: pointer; font-size: 0.88rem; transition: border-color 0.15s ease, background 0.15s ease; }
 .tier-option:hover { border-color: var(--teal-mid); }

@@ -323,7 +323,7 @@ def wa_link(text):
 
 
 def usd(n):
-    return '${:,.0f}'.format(n)
+    return '${:,.0f} USD'.format(n)
 
 
 def price_summary(pricing):

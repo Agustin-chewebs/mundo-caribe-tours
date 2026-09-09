@@ -7,8 +7,35 @@
   var LS_HOTEL = 'mc_hotel';
   var LS_ROOM = 'mc_room';
   var LS_MAPS = 'mc_maps';
+  var LS_PAYMENT = 'mc_payment';
   var LS_CART_VERSION = 'mc_cart_v';
   var CART_VERSION = 2; // bump this whenever the shape of a cart item changes, to auto-clear stale carts
+
+  // ---------- payment methods ----------
+  // All tour prices are in USD. Fixed reference rate given by Agustín (not
+  // used for any calculation here, just shown so travelers thinking in
+  // pesos mexicanos aren't confused about the currency).
+  var MXN_REFERENCE_RATE = 16.50;
+  var CARD_SURCHARGE = 0.05; // 5% recargo si paga con tarjeta
+  var PAYMENT_METHODS = [
+    { value: 'usd_transfer', label: 'Transferencia en USD (cuenta en EE.UU.)' },
+    { value: 'ars_transfer', label: 'Transferencia en pesos argentinos (cotización del día)' },
+    { value: 'cop_transfer', label: 'Transferencia en pesos colombianos (cotización del día)' },
+    { value: 'card', label: 'Tarjeta de crédito/débito (+5% recargo)' }
+  ];
+  function paymentSelectHtml(id, current) {
+    var opts = '<option value="">Elegí un método de pago</option>' + PAYMENT_METHODS.map(function (m) {
+      return '<option value="' + m.value + '"' + (m.value === current ? ' selected' : '') + '>' + m.label + '</option>';
+    }).join('');
+    return '<select id="' + id + '">' + opts + '</select>';
+  }
+  function paymentLabel(value) {
+    var m = PAYMENT_METHODS.filter(function (p) { return p.value === value; })[0];
+    return m ? m.label : '';
+  }
+  function withSurcharge(total, paymentValue) {
+    return paymentValue === 'card' ? Math.round(total * (1 + CARD_SURCHARGE)) : total;
+  }
 
   // ---------- storage helpers ----------
   function ensureCartVersion() {
@@ -95,7 +122,7 @@
     return d.getFullYear() + '-' + mm + '-' + dd;
   }
 
-  function usd(n) { return '$' + n.toLocaleString('en-US'); }
+  function usd(n) { return '$' + n.toLocaleString('en-US') + ' USD'; }
 
   // ===========================================================================
   // CART (global, injected on every page)
@@ -193,11 +220,14 @@
     var hotel = getStr(LS_HOTEL);
     var room = getStr(LS_ROOM);
     var maps = getStr(LS_MAPS);
+    var payment = getStr(LS_PAYMENT);
     // "Personas" = tamaño del grupo, no la suma entre tours (las mismas personas pueden hacer varios tours)
     var totalPersons = cart.reduce(function (max, item) { return Math.max(max, item.headcount || 0); }, 0);
+    var displayTotal = withSurcharge(total, payment);
 
     checkoutEl.innerHTML =
-      '<div class="mc-cart-total-row"><span>Total</span><strong>' + usd(total) + (hasQuote ? ' + ítems a cotizar' : '') + '</strong></div>' +
+      '<div class="mc-cart-total-row"><span>Total</span><strong>' + usd(displayTotal) + (hasQuote ? ' + ítems a cotizar' : '') + '</strong></div>' +
+      (payment === 'card' ? '<p class="mc-cart-persons">Incluye 5% de recargo por pago con tarjeta.</p>' : '') +
       '<p class="mc-cart-persons">Personas: ' + totalPersons + '</p>' +
       '<div class="booking-field-row">' +
       '<div class="booking-field"><label for="mc-hotel">Hotel / lugar de hospedaje</label>' +
@@ -209,11 +239,16 @@
       '<button type="button" class="btn-secondary mc-loc-btn" id="mc-share-location">📍 Compartir mi ubicación</button>' +
       '<div id="mc-loc-status" class="mc-loc-status">' + (maps ? '✓ Ubicación agregada' : '') + '</div>' +
       '</div>' +
+      '<div class="booking-field"><label for="mc-payment">Método de pago</label>' +
+      paymentSelectHtml('mc-payment', payment) + '</div>' +
+      '<p class="payment-note">Precios en USD (referencia: 1 USD ≈ $' + MXN_REFERENCE_RATE.toFixed(2) + ' MXN). Transferencia en pesos argentinos o colombianos: cotización del día, datos de pago por WhatsApp.</p>' +
       '<button type="button" class="btn-primary" id="mc-checkout-cta">Reservar todo por WhatsApp</button>' +
+      '<p class="contact-form-status" id="mc-checkout-status"></p>' +
       '<button type="button" class="mc-clear-cart" id="mc-clear-cart">Vaciar carrito</button>';
 
-    document.getElementById('mc-hotel').addEventListener('input', function (e) { setStr(LS_HOTEL, e.target.value); });
-    document.getElementById('mc-room').addEventListener('input', function (e) { setStr(LS_ROOM, e.target.value); });
+    document.getElementById('mc-hotel').addEventListener('input', function (e) { setStr(LS_HOTEL, e.target.value); e.target.classList.toggle('field-invalid', !e.target.value.trim()); });
+    document.getElementById('mc-room').addEventListener('input', function (e) { setStr(LS_ROOM, e.target.value); e.target.classList.toggle('field-invalid', !e.target.value.trim()); });
+    document.getElementById('mc-payment').addEventListener('change', function (e) { setStr(LS_PAYMENT, e.target.value); renderCartDrawer(); });
     document.getElementById('mc-share-location').addEventListener('click', shareLocation);
     document.getElementById('mc-clear-cart').addEventListener('click', function () {
       if (confirm('¿Vaciar todo el carrito?')) { setCart([]); updateCartBadge(); renderCartDrawer(); }
@@ -243,20 +278,43 @@
     var hotel = getStr(LS_HOTEL);
     var room = getStr(LS_ROOM);
     var maps = getStr(LS_MAPS);
+    var payment = getStr(LS_PAYMENT);
+
+    var missing = [];
+    if (!hotel.trim()) missing.push('el hotel');
+    if (!room.trim()) missing.push('el número de habitación');
+    if (!payment) missing.push('el método de pago');
+    if (missing.length) {
+      var status = document.getElementById('mc-checkout-status');
+      if (status) {
+        status.textContent = 'Completá ' + missing.join(', ') + ' antes de reservar.';
+        status.className = 'contact-form-status error';
+      }
+      ['mc-hotel', 'mc-room', 'mc-payment'].forEach(function (id) {
+        var f = document.getElementById(id);
+        if (!f) return;
+        var isMissing = (id === 'mc-hotel' && !hotel.trim()) || (id === 'mc-room' && !room.trim()) || (id === 'mc-payment' && !payment);
+        f.classList.toggle('field-invalid', isMissing);
+      });
+      return;
+    }
+
     var lines = ['¡Hola! Quiero reservar estos tours:', ''];
     var total = 0;
     var totalPersons = 0;
     cart.forEach(function (item, i) {
       lines.push((i + 1) + '. ' + item.name);
       lines.push('   ' + item.detail);
-      lines.push('   ' + (typeof item.total === 'number' ? usd(item.total) + ' USD' : 'A cotizar'));
+      lines.push('   ' + (typeof item.total === 'number' ? usd(item.total) : 'A cotizar'));
       if (typeof item.total === 'number') total += item.total;
       // "Personas" = tamaño del grupo, no la suma entre tours (las mismas personas pueden hacer varios tours)
       totalPersons = Math.max(totalPersons, item.headcount || 0);
       lines.push('');
     });
-    lines.push('Total: ' + usd(total) + ' USD');
+    var finalTotal = withSurcharge(total, payment);
+    lines.push('Total: ' + usd(finalTotal) + (payment === 'card' ? ' (incluye 5% de recargo por tarjeta)' : ''));
     lines.push('Personas: ' + totalPersons);
+    lines.push('Método de pago: ' + paymentLabel(payment));
     if (hotel) lines.push('Hotel: ' + hotel + (room ? ' · Habitación: ' + room : ''));
     if (maps) lines.push('Ubicación: ' + maps);
     window.open(waLink(lines.join('\n')), '_blank', 'noopener');
@@ -351,8 +409,12 @@
       '<button type="button" class="btn-secondary mc-loc-btn" id="bw-share-location">📍 Compartir mi ubicación</button>' +
       '<div id="bw-loc-status" class="mc-loc-status">' + (getStr(LS_MAPS) ? '✓ Ubicación agregada' : '') + '</div>' +
       '</div>';
+    html += '<div class="booking-field"><label for="bw-payment">Método de pago</label>' +
+      paymentSelectHtml('bw-payment', getStr(LS_PAYMENT)) + '</div>';
+    html += '<p class="payment-note">Precios en USD (referencia: 1 USD ≈ $' + MXN_REFERENCE_RATE.toFixed(2) + ' MXN). Transferencia en pesos argentinos o colombianos: cotización del día, datos de pago por WhatsApp.</p>';
 
     html += '<button type="button" class="btn-primary" id="bw-cta">🛒 Agregar al carrito</button>';
+    html += '<p class="contact-form-status" id="bw-checkout-status"></p>';
     html += '<div id="bw-added" class="bw-added" hidden>' +
       '<p>✓ Agregado al carrito</p>' +
       '<button type="button" class="btn-primary" id="bw-goto-cart">Ver carrito y reservar →</button>' +
@@ -361,10 +423,12 @@
     html += '<p class="booking-fineprint">Se coordina y confirma directo por WhatsApp con Agustín.</p>';
 
     el.innerHTML = html;
+    updateTotal(); // re-sync in case a payment method (card +5%) was already remembered from a previous visit
 
     document.getElementById('bw-date').addEventListener('change', function (e) { state.date = e.target.value; });
-    document.getElementById('bw-hotel').addEventListener('input', function (e) { setStr(LS_HOTEL, e.target.value); });
-    document.getElementById('bw-room').addEventListener('input', function (e) { setStr(LS_ROOM, e.target.value); });
+    document.getElementById('bw-hotel').addEventListener('input', function (e) { setStr(LS_HOTEL, e.target.value); e.target.classList.toggle('field-invalid', !e.target.value.trim()); });
+    document.getElementById('bw-room').addEventListener('input', function (e) { setStr(LS_ROOM, e.target.value); e.target.classList.toggle('field-invalid', !e.target.value.trim()); });
+    document.getElementById('bw-payment').addEventListener('change', function (e) { setStr(LS_PAYMENT, e.target.value); e.target.classList.toggle('field-invalid', !e.target.value); updateTotal(); });
     document.getElementById('bw-share-location').addEventListener('click', function () {
       var status = document.getElementById('bw-loc-status');
       if (!navigator.geolocation) { status.textContent = 'Tu navegador no permite compartir ubicación.'; return; }
@@ -410,7 +474,10 @@
 
     function updateTotal() {
       var t = document.getElementById('bw-total');
-      if (t) t.textContent = usd(calcTotal());
+      if (!t) return;
+      var payment = getStr(LS_PAYMENT);
+      var total = withSurcharge(calcTotal(), payment);
+      t.textContent = usd(total) + (payment === 'card' ? ' (+5% tarjeta)' : '');
     }
 
     function infantsSuffix() {
@@ -436,6 +503,27 @@
     }
 
     document.getElementById('bw-cta').addEventListener('click', function () {
+      var hotel = getStr(LS_HOTEL);
+      var room = getStr(LS_ROOM);
+      var payment = getStr(LS_PAYMENT);
+      var missing = [];
+      if (!hotel.trim()) missing.push('el hotel');
+      if (!room.trim()) missing.push('el número de habitación');
+      if (!payment) missing.push('el método de pago');
+      if (missing.length) {
+        var status = document.getElementById('bw-checkout-status');
+        if (status) {
+          status.textContent = 'Completá ' + missing.join(', ') + ' antes de agregar al carrito.';
+          status.className = 'contact-form-status error';
+        }
+        ['bw-hotel', 'bw-room', 'bw-payment'].forEach(function (id) {
+          var f = document.getElementById(id);
+          if (!f) return;
+          var isMissing = (id === 'bw-hotel' && !hotel.trim()) || (id === 'bw-room' && !room.trim()) || (id === 'bw-payment' && !payment);
+          f.classList.toggle('field-invalid', isMissing);
+        });
+        return;
+      }
       var cart = getCart();
       cart.push({
         name: data.name,
