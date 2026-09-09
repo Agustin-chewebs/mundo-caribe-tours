@@ -23,6 +23,10 @@ SNORKEL_AGE_NOTE = 'Para hacer snorkel: edad mínima 8 años, edad máxima 65 a�
 INSTAGRAM_URL = 'https://www.instagram.com/mundocaribetours'
 GOOGLE_MAPS_URL = 'https://share.google/n1J6T9x87tUbbPaJm'
 FACEBOOK_URL = 'https://www.facebook.com/people/Mundo-Caribe-Tours/61569544733150/'
+# For travelers planning ahead (trip ~1-3 months out) who aren't ready to
+# book specific dates/headcounts via the WhatsApp widget yet — a lighter
+# lead-capture form, emailed via Formspree (no backend needed).
+FORMSPREE_URL = 'https://formspree.io/f/xljeapok'
 
 # ---------------------------------------------------------------------------
 # DATA
@@ -420,6 +424,44 @@ def render_footer():
         <a href="''' + GOOGLE_MAPS_URL + '''" target="_blank" rel="noopener">⭐ Reseñas en Google</a>
         <span>Playa del Carmen, Riviera Maya</span>
       </div>
+    </div>
+
+    <div class="contact-form-card">
+      <h3>¿Tu viaje es de acá a 1–3 meses?</h3>
+      <p>Si todavía no tenés fechas cerradas, dejanos tus datos y te contactamos nosotros para ir armando todo con tiempo, sin apuro.</p>
+      <form class="contact-form" id="mc-contact-form" action="''' + FORMSPREE_URL + '''" method="POST">
+        <input type="hidden" name="_subject" value="Nueva consulta (viaje 1-3 meses) - Mundo Caribe Tours">
+        <div class="booking-field">
+          <label for="cf-name">Nombre</label>
+          <input type="text" id="cf-name" name="name" required>
+        </div>
+        <div class="booking-field-row">
+          <div class="booking-field">
+            <label for="cf-phone">WhatsApp / Teléfono</label>
+            <input type="tel" id="cf-phone" name="phone" required>
+          </div>
+          <div class="booking-field">
+            <label for="cf-email">Email</label>
+            <input type="email" id="cf-email" name="email">
+          </div>
+        </div>
+        <div class="booking-field-row">
+          <div class="booking-field">
+            <label for="cf-date">Fecha aproximada del viaje</label>
+            <input type="month" id="cf-date" name="fecha_aproximada">
+          </div>
+          <div class="booking-field">
+            <label for="cf-tours">Tours de interés</label>
+            <input type="text" id="cf-tours" name="tours_interes" placeholder="Ej: Chichén Itzá, Holbox...">
+          </div>
+        </div>
+        <div class="booking-field">
+          <label for="cf-message">Mensaje (opcional)</label>
+          <textarea id="cf-message" name="message" rows="3"></textarea>
+        </div>
+        <button class="btn-primary" type="submit">Enviar</button>
+        <p class="contact-form-status" id="mc-contact-status" aria-live="polite"></p>
+      </form>
     </div>
   </div>
 </section>

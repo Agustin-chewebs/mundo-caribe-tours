@@ -464,7 +464,40 @@
     initBooking();
     initNavDropdown();
     initCarousels();
+    initContactForm();
   });
+
+  // ---------- contact form (Formspree, for travelers still 1-3 months out) ----------
+  function initContactForm() {
+    var form = document.getElementById('mc-contact-form');
+    if (!form) return;
+    var status = document.getElementById('mc-contact-status');
+    var btn = form.querySelector('button[type="submit"]');
+    form.addEventListener('submit', function (e) {
+      e.preventDefault();
+      btn.disabled = true;
+      status.textContent = 'Enviando...';
+      status.className = 'contact-form-status';
+      fetch(form.action, {
+        method: 'POST',
+        body: new FormData(form),
+        headers: { Accept: 'application/json' }
+      }).then(function (res) {
+        if (res.ok) {
+          form.reset();
+          status.textContent = '¡Gracias! Te contactamos pronto.';
+          status.className = 'contact-form-status ok';
+        } else {
+          throw new Error('bad status');
+        }
+      }).catch(function () {
+        status.textContent = 'No se pudo enviar. Probá de nuevo o escribinos por WhatsApp.';
+        status.className = 'contact-form-status error';
+      }).then(function () {
+        btn.disabled = false;
+      });
+    });
+  }
 
   // ===========================================================================
   // NAV "TOURS" DROPDOWN (categories + "Ver todos los tours")
