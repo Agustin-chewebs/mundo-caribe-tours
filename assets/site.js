@@ -12,13 +12,14 @@
   var CART_VERSION = 2; // bump this whenever the shape of a cart item changes, to auto-clear stale carts
 
   // ---------- payment methods ----------
-  // All tour prices are in USD. Fixed reference rate given by Agustín (not
-  // used for any calculation here, just shown so travelers thinking in
-  // pesos mexicanos aren't confused about the currency).
+  // All tour prices are in USD. Fixed reference rate given by Agustín, used
+  // to auto-convert the total when paying cash in pesos mexicanos.
   var MXN_REFERENCE_RATE = 16.50;
   var CARD_SURCHARGE = 0.05; // 5% recargo si paga con tarjeta
   var PAYMENT_METHODS = [
     { value: 'usd_transfer', label: 'Transferencia en USD (cuenta en EE.UU.)' },
+    { value: 'cash_usd', label: 'Efectivo en USD' },
+    { value: 'cash_mxn', label: 'Efectivo en pesos mexicanos' },
     { value: 'ars_transfer', label: 'Transferencia en pesos argentinos (cotización del día)' },
     { value: 'cop_transfer', label: 'Transferencia en pesos colombianos (cotización del día)' },
     { value: 'card', label: 'Tarjeta de crédito/débito (+5% recargo)' }
@@ -35,6 +36,17 @@
   }
   function withSurcharge(total, paymentValue) {
     return paymentValue === 'card' ? Math.round(total * (1 + CARD_SURCHARGE)) : total;
+  }
+  function mxn(n) { return '$' + Math.round(n).toLocaleString('en-US') + ' MXN'; }
+  // Formats a base USD total for display/messaging, applying the card
+  // surcharge and/or the automatic USD->MXN conversion depending on the
+  // chosen payment method.
+  function formatTotal(baseTotal, paymentValue) {
+    var total = withSurcharge(baseTotal, paymentValue);
+    if (paymentValue === 'cash_mxn') {
+      return mxn(total * MXN_REFERENCE_RATE) + ' (' + usd(total) + ')';
+    }
+    return usd(total);
   }
 
   // ---------- storage helpers ----------
@@ -223,10 +235,9 @@
     var payment = getStr(LS_PAYMENT);
     // "Personas" = tamaño del grupo, no la suma entre tours (las mismas personas pueden hacer varios tours)
     var totalPersons = cart.reduce(function (max, item) { return Math.max(max, item.headcount || 0); }, 0);
-    var displayTotal = withSurcharge(total, payment);
 
     checkoutEl.innerHTML =
-      '<div class="mc-cart-total-row"><span>Total</span><strong>' + usd(displayTotal) + (hasQuote ? ' + ítems a cotizar' : '') + '</strong></div>' +
+      '<div class="mc-cart-total-row"><span>Total</span><strong>' + formatTotal(total, payment) + (hasQuote ? ' + ítems a cotizar' : '') + '</strong></div>' +
       (payment === 'card' ? '<p class="mc-cart-persons">Incluye 5% de recargo por pago con tarjeta.</p>' : '') +
       '<p class="mc-cart-persons">Personas: ' + totalPersons + '</p>' +
       '<div class="booking-field-row">' +
@@ -241,7 +252,7 @@
       '</div>' +
       '<div class="booking-field"><label for="mc-payment">Método de pago</label>' +
       paymentSelectHtml('mc-payment', payment) + '</div>' +
-      '<p class="payment-note">Precios en USD (referencia: 1 USD ≈ $' + MXN_REFERENCE_RATE.toFixed(2) + ' MXN). Transferencia en pesos argentinos o colombianos: cotización del día, datos de pago por WhatsApp.</p>' +
+      '<p class="payment-note">Precios en USD (1 USD = $' + MXN_REFERENCE_RATE.toFixed(2) + ' MXN, conversión automática si pagás en pesos mexicanos). Transferencia en pesos argentinos o colombianos: cotización del día, datos de pago por WhatsApp.</p>' +
       '<button type="button" class="btn-primary" id="mc-checkout-cta">Reservar todo por WhatsApp</button>' +
       '<p class="contact-form-status" id="mc-checkout-status"></p>' +
       '<button type="button" class="mc-clear-cart" id="mc-clear-cart">Vaciar carrito</button>';
@@ -311,8 +322,7 @@
       totalPersons = Math.max(totalPersons, item.headcount || 0);
       lines.push('');
     });
-    var finalTotal = withSurcharge(total, payment);
-    lines.push('Total: ' + usd(finalTotal) + (payment === 'card' ? ' (incluye 5% de recargo por tarjeta)' : ''));
+    lines.push('Total: ' + formatTotal(total, payment) + (payment === 'card' ? ' (incluye 5% de recargo por tarjeta)' : ''));
     lines.push('Personas: ' + totalPersons);
     lines.push('Método de pago: ' + paymentLabel(payment));
     if (hotel) lines.push('Hotel: ' + hotel + (room ? ' · Habitación: ' + room : ''));
@@ -411,7 +421,7 @@
       '</div>';
     html += '<div class="booking-field"><label for="bw-payment">Método de pago</label>' +
       paymentSelectHtml('bw-payment', getStr(LS_PAYMENT)) + '</div>';
-    html += '<p class="payment-note">Precios en USD (referencia: 1 USD ≈ $' + MXN_REFERENCE_RATE.toFixed(2) + ' MXN). Transferencia en pesos argentinos o colombianos: cotización del día, datos de pago por WhatsApp.</p>';
+    html += '<p class="payment-note">Precios en USD (1 USD = $' + MXN_REFERENCE_RATE.toFixed(2) + ' MXN, conversión automática si pagás en pesos mexicanos). Transferencia en pesos argentinos o colombianos: cotización del día, datos de pago por WhatsApp.</p>';
 
     html += '<button type="button" class="btn-primary" id="bw-cta">🛒 Agregar al carrito</button>';
     html += '<p class="contact-form-status" id="bw-checkout-status"></p>';
@@ -476,8 +486,7 @@
       var t = document.getElementById('bw-total');
       if (!t) return;
       var payment = getStr(LS_PAYMENT);
-      var total = withSurcharge(calcTotal(), payment);
-      t.textContent = usd(total) + (payment === 'card' ? ' (+5% tarjeta)' : '');
+      t.textContent = formatTotal(calcTotal(), payment) + (payment === 'card' ? ' (+5% tarjeta)' : '');
     }
 
     function infantsSuffix() {
