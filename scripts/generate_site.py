@@ -14,7 +14,7 @@ import json
 import urllib.parse
 
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-BASE_URL = 'https://mundocaribetours.netlify.app'
+BASE_URL = 'https://mundo-caribe-tours.ignacioagustindannunzio.workers.dev'
 WA_NUMBER = '529841191147'
 
 GENERAL_AGE_NOTE = 'Edades: infantes de 0 a 2 años (sin cargo), niños de 3 a 9 años, adultos desde 10 años en adelante.'
