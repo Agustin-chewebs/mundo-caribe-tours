@@ -314,6 +314,25 @@ QUOTE_ITEMS = {
 # Featured on homepage ("Tours más pedidos"): real tour slugs + a quote card for Xcaret
 FEATURED_SLUGS = ['chichen-itza-plus', 'isla-mujeres-catamaran', 'holbox', 'cozumel', 'tiburon-ballena']
 
+# "¿Qué querés vivir?" home selector (2026-09-10): 4 paths — 3 lead to a
+# real, already-built category page (chosen photo is one of that
+# category's own real tour photos), the 4th is a direct WhatsApp ask for
+# a personal recommendation instead of a destination.
+PATH_TILES = [
+    {'key': 'ruinas', 'label': 'Ruinas y cultura', 'href': '/categoria/cultura-maya-ruinas/', 'photo': 'chichen-itza-plus.jpg'},
+    {'key': 'islas', 'label': 'Islas y mar', 'href': '/categoria/islas-catamaranes/', 'photo': 'isla-mujeres-catamaran.jpg'},
+    {'key': 'aventura', 'label': 'Cenotes y aventura', 'href': '/categoria/aventura-acuatica/', 'photo': 'atv-casa-jaguar.jpg'},
+]
+
+# Short "ideal para" line shown on tour cards — paraphrased from each
+# category's own real `intro` text above (not a per-tour claim, since the
+# project data has no per-tour "ideal for" field; disclosed as such).
+CATEGORY_IDEAL_FOR = {
+    'ruinas': 'Ideal para quienes quieren historia, cultura maya y cenotes en el mismo día.',
+    'islas': 'Ideal para quienes buscan playa, snorkel y aguas turquesas.',
+    'aventura': 'Ideal para quienes buscan adrenalina y naturaleza.',
+}
+
 # ---------------------------------------------------------------------------
 # HELPERS
 # ---------------------------------------------------------------------------
@@ -520,16 +539,42 @@ def page_shell(head, body):
 # CARDS
 # ---------------------------------------------------------------------------
 
+def tour_schedule_bits(tour):
+    """The project only has one 'availability' field per tour, and it's
+    overloaded: for every tour except pesca-yate-cancun it holds the real
+    days of operation (or the 'Consulta disponibilidad' placeholder,
+    already used verbatim elsewhere on the site); for pesca-yate-cancun it
+    holds the departure point instead ('Salida: ...'). Split it back into
+    (days, pickup) — never both, never invented — so the card can label
+    each correctly."""
+    avail = tour.get('availability')
+    if not avail:
+        return None, None
+    if avail.startswith('Salida:'):
+        return None, avail[len('Salida:'):].strip()
+    return avail, None
+
+
 def render_tour_card(tour):
     photo_html = f'<img class="tour-card-photo" src="/assets/tours/{tour["photo"]}" alt="{tour["name"]}">' if tour.get('photo') else ''
     price = price_summary(tour['pricing'])
+    days, pickup = tour_schedule_bits(tour)
+    meta_bits = [f'<span>⏱ {tour["duration"]}</span>']
+    if days:
+        meta_bits.append(f'<span>📅 {days}</span>')
+    if pickup:
+        meta_bits.append(f'<span>📍 {pickup}</span>')
+    ideal_for = CATEGORY_IDEAL_FOR.get(tour['category'])
+    ideal_html = f'<p class="card-ideal-for">{ideal_for}</p>' if ideal_for else ''
     return f'''<a class="tour-card" href="/tour/{tour['slug']}/">
         {photo_html}
         <div class="tour-card-body">
         <h3>{tour['name']}</h3>
         <p class="desc">{tour['desc']}</p>
+        <div class="card-meta-row">{''.join(meta_bits)}</div>
+        {ideal_html}
         <div class="card-price">{price}</div>
-        <span class="tour-link">Ver detalles →</span>
+        <span class="tour-link">Ver tour y reservar →</span>
         </div>
       </a>'''
 
@@ -593,25 +638,32 @@ def render_home():
     xcaret_quote_card_html = render_quote_card({'name': 'Xcaret', 'desc': 'Parque México · Xcaret Básico'})
     featured_row = carousel_wrap(featured_cards_html + xcaret_quote_card_html)
 
-    cat_sections = ''
-    for key in ['ruinas', 'islas', 'aventura']:
-        cat = CAT_BY_KEY[key]
-        tours_in_cat = [t for t in TOURS if t['category'] == key][:6]
-        row = cards_row(tours_in_cat, render_tour_card)
-        cat_sections += f'''
-<section class="reveal">
+    path_tiles_html = ''.join(f'''<a class="path-tile" href="{t['href']}">
+        <img src="/assets/tours/{t['photo']}" alt="{t['label']}">
+        <div class="path-tile-label">
+          <h3>{t['label']}</h3>
+          <span>Ver tours →</span>
+        </div>
+      </a>''' for t in PATH_TILES)
+    whatsapp_tile_html = f'''<a class="path-tile path-tile-whatsapp" href="{wa_link('¡Hola! Todavía no sé qué tour elegir — ¿me recomendás algo según lo que busco?')}" target="_blank" rel="noopener">
+        <div class="path-tile-label">
+          <h3>No sé, recomendame vos</h3>
+          <span>Hablar por WhatsApp →</span>
+        </div>
+      </a>'''
+    path_selector = f'''<section id="planes" class="reveal">
   <div class="container">
-    <div class="section-head-row">
-      <div class="section-head">
-        <p class="eyebrow">{cat['title']}</p>
-        <h2>{cat['intro'].split('.')[0]}.</h2>
-      </div>
-      <a class="see-all" href="/categoria/{cat['slug']}/">Ver todos →</a>
+    <div class="section-head">
+      <p class="eyebrow">Elegí tu plan</p>
+      <h2>¿Qué querés vivir?</h2>
+      <p>Contame qué te llama más y te llevo directo a esos tours.</p>
     </div>
-    {row}
+    <div class="path-grid">
+      {path_tiles_html}
+      {whatsapp_tile_html}
+    </div>
   </div>
-</section>
-'''
+</section>'''
 
     special_items = []
     for key in ['pesca', 'xcaret', 'transportes', 'vuelos']:
@@ -639,7 +691,7 @@ def render_home():
       <h1>Vivan el Caribe mexicano a fondo</h1>
       <p class="lede">Soy Agustín, argentino, vivo en la Riviera Maya hace 6 años. Conozco cada cenote, ruina e isla para armarte el viaje ideal.</p>
       <div class="hero-actions">
-        <a class="btn-primary" href="#tours">Encontrá tu plan</a>
+        <a class="btn-primary" href="#planes">Encontrá tu plan</a>
         <a class="btn-secondary" href="{wa_link('Hola, quisiera información sobre los tours.')}" target="_blank" rel="noopener">Hablá conmigo por WhatsApp</a>
       </div>
       <p class="hero-signal">🤝 Coordinado directo con Agustín por WhatsApp</p>
@@ -649,6 +701,8 @@ def render_home():
     </div>
   </div>
 </section>
+
+{path_selector}
 
 <section id="tours" class="reveal">
   <div class="container">
@@ -660,7 +714,6 @@ def render_home():
     {featured_row}
   </div>
 </section>
-{cat_sections}
 <section class="reveal">
   <div class="container">
     <div class="section-head">

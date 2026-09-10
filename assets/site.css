@@ -95,6 +95,19 @@ section { padding: var(--space-6) 0; }
 .section-head-row .section-head { margin-bottom: 0; }
 .see-all { font-size: 0.85rem; font-weight: 500; color: var(--teal-deep); border-bottom: 1.5px solid var(--teal-mid); padding-bottom: 2px; white-space: nowrap; }
 
+/* ---------- "¿Qué querés vivir?" path selector ---------- */
+.path-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: var(--space-3); }
+.path-tile { position: relative; display: block; aspect-ratio: 4 / 3; border-radius: var(--radius); overflow: hidden; }
+.path-tile img { width: 100%; height: 100%; object-fit: cover; transition: transform 0.4s ease; }
+.path-tile:hover img { transform: scale(1.04); }
+.path-tile::after { content: ''; position: absolute; inset: 0; background: linear-gradient(to top, rgba(18,48,44,0.75), rgba(18,48,44,0) 55%); }
+.path-tile-label { position: absolute; left: 0; right: 0; bottom: 0; padding: var(--space-3); z-index: 1; color: var(--cream); }
+.path-tile-label h3 { color: var(--cream); font-size: 1.25rem; }
+.path-tile-label span { display: inline-block; margin-top: 4px; font-size: 0.85rem; opacity: 0.9; }
+.path-tile-whatsapp { background: var(--teal-deep); display: flex; align-items: center; justify-content: center; text-align: center; }
+.path-tile-whatsapp .path-tile-label { position: static; padding: var(--space-3); }
+.path-tile-whatsapp .path-tile-label h3 { font-size: 1.15rem; }
+
 /* ---------- breadcrumb ---------- */
 .breadcrumb { font-size: 0.8rem; color: rgba(18,48,44,0.55); padding: var(--space-3) 0 0; }
 .breadcrumb a { color: var(--teal-mid); }
@@ -123,6 +136,8 @@ section { padding: var(--space-6) 0; }
 .tour-card h3 { font-size: 1.1rem; }
 .tour-card p.desc { margin-top: 6px; font-size: 0.88rem; color: rgba(18,48,44,0.68); flex: 1; }
 .tour-card .card-meta { font-size: 0.76rem; color: var(--teal-mid); font-weight: 500; margin-top: var(--space-2); text-transform: uppercase; letter-spacing: 0.04em; }
+.card-meta-row { display: flex; flex-wrap: wrap; gap: 4px 10px; margin-top: var(--space-2); font-size: 0.78rem; color: rgba(18,48,44,0.6); }
+.card-ideal-for { margin-top: 8px; font-size: 0.84rem; font-style: italic; color: var(--teal-deep); }
 .tour-card .card-price { margin-top: var(--space-2); font-size: 0.95rem; font-weight: 600; color: var(--teal-deep); }
 .tour-card .card-price small { font-weight: 400; color: rgba(18,48,44,0.55); font-size: 0.75rem; }
 .tour-card .tour-link { display: inline-block; margin-top: var(--space-2); font-size: 0.82rem; color: var(--teal-deep); font-weight: 500; border: none; border-bottom: 1.5px solid var(--teal-mid); padding: 0 0 2px 0; background: none; font-family: inherit; cursor: pointer; align-self: flex-start; }
@@ -266,4 +281,8 @@ footer .container { display: flex; justify-content: space-between; flex-wrap: wr
      would otherwise push down */
   .hero .container { gap: var(--space-4); }
   .hero-photo img { aspect-ratio: 16 / 10; }
+  /* one big, easy-to-tap tile per row instead of a cramped 2x2 grid */
+  .path-grid { grid-template-columns: 1fr; }
+  .path-tile { aspect-ratio: 16 / 10; }
+  .path-tile-whatsapp { aspect-ratio: auto; padding: var(--space-3) 0; }
 }
