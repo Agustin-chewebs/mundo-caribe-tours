@@ -137,7 +137,7 @@ section { padding: var(--space-6) 0; }
 .tour-card p.desc { margin-top: 6px; font-size: 0.88rem; color: rgba(18,48,44,0.68); flex: 1; }
 .tour-card .card-meta { font-size: 0.76rem; color: var(--teal-mid); font-weight: 500; margin-top: var(--space-2); text-transform: uppercase; letter-spacing: 0.04em; }
 .card-meta-row { display: flex; flex-wrap: wrap; gap: 4px 10px; margin-top: var(--space-2); font-size: 0.78rem; color: rgba(18,48,44,0.6); }
-.card-ideal-for { margin-top: 8px; font-size: 0.84rem; font-style: italic; color: var(--teal-deep); }
+.card-tag { display: inline-block; margin-top: 8px; font-size: 0.72rem; font-weight: 600; text-transform: uppercase; letter-spacing: 0.04em; color: var(--teal-mid); background: rgba(63,133,119,0.1); padding: 4px 10px; border-radius: 999px; align-self: flex-start; }
 .tour-card .card-price { margin-top: var(--space-2); font-size: 0.95rem; font-weight: 600; color: var(--teal-deep); }
 .tour-card .card-price small { font-weight: 400; color: rgba(18,48,44,0.55); font-size: 0.75rem; }
 .tour-card .tour-link { display: inline-block; margin-top: var(--space-2); font-size: 0.82rem; color: var(--teal-deep); font-weight: 500; border: none; border-bottom: 1.5px solid var(--teal-mid); padding: 0 0 2px 0; background: none; font-family: inherit; cursor: pointer; align-self: flex-start; }

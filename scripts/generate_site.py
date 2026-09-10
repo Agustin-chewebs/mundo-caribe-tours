@@ -324,13 +324,15 @@ PATH_TILES = [
     {'key': 'aventura', 'label': 'Cenotes y aventura', 'href': '/categoria/aventura-acuatica/', 'photo': 'atv-casa-jaguar.jpg'},
 ]
 
-# Short "ideal para" line shown on tour cards — paraphrased from each
-# category's own real `intro` text above (not a per-tour claim, since the
-# project data has no per-tour "ideal for" field; disclosed as such).
-CATEGORY_IDEAL_FOR = {
-    'ruinas': 'Ideal para quienes quieren historia, cultura maya y cenotes en el mismo día.',
-    'islas': 'Ideal para quienes buscan playa, snorkel y aguas turquesas.',
-    'aventura': 'Ideal para quienes buscan adrenalina y naturaleza.',
+# Short experience tag shown on tour cards. This is a category-level
+# label, not a per-tour claim — the project has no per-tour "ideal for"
+# field, so it's presented as a plain tag ("Historia y cultura"), never
+# phrased as "Ideal para..." (which would imply a specific recommendation
+# this tour doesn't actually carry as data).
+CATEGORY_TAG = {
+    'ruinas': 'Historia y cultura',
+    'islas': 'Islas y mar',
+    'aventura': 'Aventura y cenotes',
 }
 
 # ---------------------------------------------------------------------------
@@ -564,15 +566,15 @@ def render_tour_card(tour):
         meta_bits.append(f'<span>📅 {days}</span>')
     if pickup:
         meta_bits.append(f'<span>📍 {pickup}</span>')
-    ideal_for = CATEGORY_IDEAL_FOR.get(tour['category'])
-    ideal_html = f'<p class="card-ideal-for">{ideal_for}</p>' if ideal_for else ''
+    tag = CATEGORY_TAG.get(tour['category'])
+    tag_html = f'<span class="card-tag">{tag}</span>' if tag else ''
     return f'''<a class="tour-card" href="/tour/{tour['slug']}/">
         {photo_html}
         <div class="tour-card-body">
         <h3>{tour['name']}</h3>
         <p class="desc">{tour['desc']}</p>
         <div class="card-meta-row">{''.join(meta_bits)}</div>
-        {ideal_html}
+        {tag_html}
         <div class="card-price">{price}</div>
         <span class="tour-link">Ver tour y reservar →</span>
         </div>
