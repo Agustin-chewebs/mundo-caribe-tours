@@ -560,9 +560,47 @@
     injectCartUI();
     initBooking();
     initNavDropdown();
+    initMobileMenu();
     initCarousels();
     initContactForm();
   });
+
+  // ---------- mobile nav (hamburger + panel) ----------
+  function initMobileMenu() {
+    var burger = document.querySelector('.nav-burger');
+    var menu = document.getElementById('mobile-menu');
+    if (!burger || !menu) return;
+
+    function open() {
+      menu.hidden = false;
+      burger.setAttribute('aria-expanded', 'true');
+    }
+    function close() {
+      menu.hidden = true;
+      burger.setAttribute('aria-expanded', 'false');
+    }
+
+    burger.addEventListener('click', function (e) {
+      e.stopPropagation(); // keep this click from also hitting the "outside click" listener below
+      if (menu.hidden) open(); else close();
+    });
+    // tapping any link inside (category, "ver todos", Contacto, WhatsApp) closes the panel,
+    // so e.g. the #contacto in-page anchor scrolls to a section that's actually visible
+    menu.addEventListener('click', function (e) {
+      if (e.target.tagName === 'A') close();
+    });
+    document.addEventListener('click', function (e) {
+      if (!menu.hidden && !menu.contains(e.target)) close();
+    });
+    document.addEventListener('keydown', function (e) {
+      if (e.key === 'Escape' && !menu.hidden) { close(); burger.focus(); }
+    });
+    // resizing past the mobile breakpoint (e.g. rotating a tablet) shouldn't
+    // leave the panel stuck open behind the now-visible desktop nav
+    window.addEventListener('resize', function () {
+      if (window.innerWidth > 640 && !menu.hidden) close();
+    });
+  }
 
   // ---------- contact form (Formspree, for travelers still 1-3 months out) ----------
   function initContactForm() {

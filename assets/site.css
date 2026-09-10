@@ -61,6 +61,17 @@ ul { margin: 0; padding: 0; list-style: none; }
 .btn-whatsapp { background: var(--teal-deep); color: var(--cream); padding: 10px 20px; border-radius: 999px; font-size: 0.82rem; font-weight: 500; white-space: nowrap; transition: background 0.2s ease, transform 0.2s ease; }
 .btn-whatsapp:hover { background: var(--teal-mid); transform: translateY(-1px); }
 
+/* ---------- mobile nav (hamburger + panel) ---------- */
+.nav-right { display: flex; align-items: center; gap: var(--space-2); }
+.nav-burger { display: none; flex-direction: column; justify-content: center; align-items: center; gap: 5px; width: 34px; height: 34px; padding: 0; border: none; background: none; cursor: pointer; flex-shrink: 0; }
+.nav-burger span { display: block; width: 22px; height: 2px; background: var(--teal-deep); border-radius: 2px; transition: transform 0.2s ease, opacity 0.2s ease; }
+.nav-burger[aria-expanded="true"] span:nth-child(1) { transform: translateY(7px) rotate(45deg); }
+.nav-burger[aria-expanded="true"] span:nth-child(2) { opacity: 0; }
+.nav-burger[aria-expanded="true"] span:nth-child(3) { transform: translateY(-7px) rotate(-45deg); }
+
+.mobile-menu { display: none; }
+.mobile-menu[hidden] { display: none; }
+
 /* ---------- Hero ---------- */
 .hero { padding: var(--space-6) 0 var(--space-6); }
 .hero .container { display: grid; grid-template-columns: 1fr 0.85fr; gap: var(--space-5); align-items: center; }
@@ -72,8 +83,8 @@ ul { margin: 0; padding: 0; list-style: none; }
 .btn-secondary { border: 1.5px solid var(--teal-deep); color: var(--teal-deep); padding: 14px 27px; border-radius: 999px; font-size: 0.9rem; font-weight: 500; display: inline-block; background: none; cursor: pointer; font-family: inherit; }
 .btn-primary:hover, .btn-secondary:hover { opacity: 0.85; }
 .btn-primary:disabled { opacity: 0.5; cursor: not-allowed; }
-.hero-logo { display: flex; justify-content: center; align-items: center; }
-.hero-logo img { width: 100%; height: auto; max-width: 340px; object-fit: contain; }
+.hero-signal { margin-top: var(--space-3); font-size: 0.85rem; color: var(--teal-mid); font-weight: 500; display: flex; align-items: center; gap: 6px; }
+.hero-photo img { width: 100%; aspect-ratio: 4 / 5; object-fit: cover; border-radius: var(--radius); box-shadow: 0 20px 50px rgba(18,48,44,0.18); }
 
 section { padding: var(--space-6) 0; }
 .eyebrow { font-size: 0.78rem; letter-spacing: 0.14em; text-transform: uppercase; color: var(--teal-mid); margin-bottom: var(--space-2); font-weight: 500; }
@@ -234,13 +245,25 @@ footer .container { display: flex; justify-content: space-between; flex-wrap: wr
 
 @media (max-width: 900px) {
   .hero .container { grid-template-columns: 1fr; }
-  .hero-logo { order: -1; }
-  .hero-logo img { max-width: 240px; }
   .tour-page-grid { grid-template-columns: 1fr; }
   .booking-widget { position: static; }
 }
 @media (max-width: 640px) {
   .nav-links { display: none; }
+  .nav-burger { display: flex; }
+  .mobile-menu:not([hidden]) { display: block; }
+  .mobile-menu { border-bottom: 1px solid rgba(28,74,68,0.12); background: var(--cream); }
+  .mobile-menu .container { display: flex; flex-direction: column; padding-top: 4px; padding-bottom: var(--space-3); }
+  .mobile-menu-label { font-size: 0.78rem; letter-spacing: 0.1em; text-transform: uppercase; color: var(--teal-mid); font-weight: 600; margin-top: var(--space-2); }
+  .mobile-menu-cats { display: flex; flex-direction: column; }
+  .mobile-menu-cats a, .mobile-menu-all, .mobile-menu-link { padding: 12px 2px; font-size: 1rem; color: var(--teal-deep); border-bottom: 1px solid rgba(28,74,68,0.08); }
+  .mobile-menu-all { font-weight: 600; }
+  .mobile-menu-wa { margin-top: var(--space-3); text-align: center; }
   section { padding: var(--space-5) 0; }
   .hero { padding: var(--space-5) 0; }
+  /* text first, photo second (below the fold) — title/lede/CTA must be
+     visible without scrolling on a phone, which a full-height photo
+     would otherwise push down */
+  .hero .container { gap: var(--space-4); }
+  .hero-photo img { aspect-ratio: 16 / 10; }
 }

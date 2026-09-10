@@ -405,7 +405,24 @@ def render_nav():
       </li>
       <li><a href="/#contacto">Contacto</a></li>
     </ul>
-    <a class="btn-whatsapp" href="{wa_link(wa_text)}" target="_blank" rel="noopener">WhatsApp</a>
+    <div class="nav-right">
+      <a class="btn-whatsapp" href="{wa_link(wa_text)}" target="_blank" rel="noopener">WhatsApp</a>
+      <button class="nav-burger" type="button" aria-label="Abrir menú" aria-expanded="false" aria-controls="mobile-menu">
+        <span></span><span></span><span></span>
+      </button>
+    </div>
+  </div>
+  <div id="mobile-menu" class="mobile-menu" hidden>
+    <div class="container">
+      <p class="mobile-menu-label">Tours</p>
+      <div class="mobile-menu-cats">
+        {cat_links}
+      </div>
+      <a class="mobile-menu-all" href="/todos-los-tours/">Ver todos los tours</a>
+      <div class="nav-dropdown-sep"></div>
+      <a class="mobile-menu-link" href="/#contacto">Contacto</a>
+      <a class="btn-whatsapp mobile-menu-wa" href="{wa_link(wa_text)}" target="_blank" rel="noopener">Escribinos por WhatsApp</a>
+    </div>
   </div>
 </nav>
 '''
@@ -617,17 +634,18 @@ def render_home():
     body = render_nav() + f'''
 <section class="hero">
   <div class="container">
-    <div>
+    <div class="hero-copy">
       <p class="hero-eyebrow">Riviera Maya, México</p>
       <h1>Vivan el Caribe mexicano a fondo</h1>
-      <p class="lede">Soy Agustín, argentino, y hace 6 años cambié todo por la Riviera Maya — y nunca más me fui. En este tiempo conocí cada cenote, cada ruina y cada isla como para armarte el viaje que a mí me hubiese encantado que me arme alguien. Tours y excursiones coordinados directo por WhatsApp, sin vueltas.</p>
+      <p class="lede">Soy Agustín, argentino, vivo en la Riviera Maya hace 6 años. Conozco cada cenote, ruina e isla para armarte el viaje ideal.</p>
       <div class="hero-actions">
-        <a class="btn-primary" href="#tours">Ver tours</a>
-        <a class="btn-secondary" href="{wa_link('Hola, quisiera información sobre los tours.')}" target="_blank" rel="noopener">Escribinos por WhatsApp</a>
+        <a class="btn-primary" href="#tours">Encontrá tu plan</a>
+        <a class="btn-secondary" href="{wa_link('Hola, quisiera información sobre los tours.')}" target="_blank" rel="noopener">Hablá conmigo por WhatsApp</a>
       </div>
+      <p class="hero-signal">🤝 Coordinado directo con Agustín por WhatsApp</p>
     </div>
-    <div class="hero-logo">
-      <img src="/assets/logo.webp" alt="Mundo Caribe Tours">
+    <div class="hero-photo">
+      <img src="/assets/tours/bacalar.jpg" alt="Laguna de Bacalar, Riviera Maya" loading="eager">
     </div>
   </div>
 </section>
