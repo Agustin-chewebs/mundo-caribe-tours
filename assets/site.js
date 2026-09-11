@@ -801,22 +801,9 @@
       html += '<div class="booking-total-row"><span class="label">Total</span><span class="total" id="bw-total">' + usd(calcTotal()) + '</span></div>';
     }
 
-    html += '<div class="booking-field"><label for="bw-name">Nombre completo</label>' +
-      '<input type="text" id="bw-name" placeholder="Nombre y apellido de quien reserva" value="' + getStr(LS_NAME).replace(/"/g, '&quot;') + '"></div>';
-    html += '<div class="booking-field-row">' +
-      '<div class="booking-field"><label for="bw-hotel">Hotel / lugar de hospedaje</label>' +
-      '<input type="text" id="bw-hotel" placeholder="Ej: Hotel Grand Sirenis" value="' + getStr(LS_HOTEL).replace(/"/g, '&quot;') + '"></div>' +
-      '<div class="booking-field booking-field-narrow"><label for="bw-room">N° de habitación</label>' +
-      '<input type="text" id="bw-room" placeholder="Ej: 204" value="' + getStr(LS_ROOM).replace(/"/g, '&quot;') + '"></div>' +
-      '</div>';
-    html += '<div class="booking-field">' +
-      '<button type="button" class="btn-secondary mc-loc-btn" id="bw-share-location">📍 Compartir mi ubicación</button>' +
-      '<div id="bw-loc-status" class="mc-loc-status">' + (getStr(LS_MAPS) ? '✓ Ubicación agregada' : '') + '</div>' +
-      '</div>';
-    html += '<div class="booking-field"><label for="bw-payment">Método de pago</label>' +
-      paymentSelectHtml('bw-payment', getStr(LS_PAYMENT)) + '</div>';
-    html += '<p class="payment-note">Precios en USD (1 USD = $' + MXN_REFERENCE_RATE.toFixed(2) + ' MXN, conversión automática si pagás en pesos mexicanos). Transferencia en pesos argentinos o colombianos: cotización del día, datos de pago por WhatsApp.</p>';
-
+    // Guest data (nombre, hotel, habitación, ubicación, método de pago) is
+    // asked ONCE, in the cart/checkout — not repeated on every tour page.
+    // This widget only decides what varies per tour: fecha y pasajeros.
     html += '<button type="button" class="btn-primary" id="bw-cta">' + (editItem ? 'Guardar cambios' : '🛒 Agregar al carrito') + '</button>';
     html += '<p class="contact-form-status" id="bw-checkout-status"></p>';
     html += '<div id="bw-added" class="bw-added" hidden>' +
@@ -827,7 +814,7 @@
     html += '<p class="booking-fineprint">Se coordina y confirma directo por WhatsApp con Agustín.</p>';
 
     el.innerHTML = html;
-    updateTotal(); // re-sync in case a payment method (card +5%) was already remembered from a previous visit
+    updateTotal();
 
     var datepickerEl = document.getElementById('bw-datepicker');
     initDatePicker(datepickerEl, {
@@ -838,22 +825,6 @@
         state.date = iso;
         datepickerEl.classList.remove('field-invalid');
       }
-    });
-
-    document.getElementById('bw-name').addEventListener('input', function (e) { setStr(LS_NAME, e.target.value); e.target.classList.toggle('field-invalid', !e.target.value.trim()); });
-    document.getElementById('bw-hotel').addEventListener('input', function (e) { setStr(LS_HOTEL, e.target.value); e.target.classList.toggle('field-invalid', !e.target.value.trim()); });
-    document.getElementById('bw-room').addEventListener('input', function (e) { setStr(LS_ROOM, e.target.value); e.target.classList.toggle('field-invalid', !e.target.value.trim()); });
-    document.getElementById('bw-payment').addEventListener('change', function (e) { setStr(LS_PAYMENT, e.target.value); e.target.classList.toggle('field-invalid', !e.target.value); updateTotal(); });
-    document.getElementById('bw-share-location').addEventListener('click', function () {
-      var status = document.getElementById('bw-loc-status');
-      if (!navigator.geolocation) { status.textContent = 'Tu navegador no permite compartir ubicación.'; return; }
-      status.textContent = 'Buscando tu ubicación…';
-      navigator.geolocation.getCurrentPosition(function (pos) {
-        setStr(LS_MAPS, 'https://www.google.com/maps?q=' + pos.coords.latitude + ',' + pos.coords.longitude);
-        status.textContent = '✓ Ubicación agregada';
-      }, function () {
-        status.textContent = 'No pudimos obtener tu ubicación. No hay problema, con el hotel alcanza.';
-      }, { timeout: 10000 });
     });
 
     function bindCounter(id, key, min, max) {
@@ -887,11 +858,12 @@
       });
     });
 
+    // Payment method (and its card surcharge / MXN conversion) is chosen
+    // later, in the cart — this page shows the plain base price per tour.
     function updateTotal() {
       var t = document.getElementById('bw-total');
       if (!t) return;
-      var payment = getStr(LS_PAYMENT);
-      t.textContent = formatTotal(calcTotal(), payment) + (payment === 'card' ? ' (+5% tarjeta)' : '');
+      t.textContent = usd(calcTotal());
     }
 
     // Structured passenger fields for this cart item — kept per-tour
@@ -907,33 +879,18 @@
     }
 
     document.getElementById('bw-cta').addEventListener('click', function () {
-      var name = getStr(LS_NAME);
-      var hotel = getStr(LS_HOTEL);
-      var room = getStr(LS_ROOM);
-      var payment = getStr(LS_PAYMENT);
       // Re-check the date against the schedule here too — greying out
       // invalid days in the calendar isn't enough on its own (state could
-      // in principle hold a stale/invalid value some other way).
+      // in principle hold a stale/invalid value some other way). Guest
+      // data (nombre, hotel, pago, etc.) is validated later, in the cart.
       var dateOk = isDateAllowed(state.date, data.schedule);
-      var missing = [];
-      if (!dateOk) missing.push('una fecha válida para este tour');
-      if (!name.trim()) missing.push('el nombre completo');
-      if (!hotel.trim()) missing.push('el hotel');
-      if (!room.trim()) missing.push('el número de habitación');
-      if (!payment) missing.push('el método de pago');
-      if (missing.length) {
+      if (!dateOk) {
         var status = document.getElementById('bw-checkout-status');
         if (status) {
-          status.textContent = 'Completá ' + missing.join(', ') + ' antes de agregar al carrito.';
+          status.textContent = 'Elegí una fecha válida para este tour antes de agregar al carrito.';
           status.className = 'contact-form-status error';
         }
-        datepickerEl.classList.toggle('field-invalid', !dateOk);
-        ['bw-name', 'bw-hotel', 'bw-room', 'bw-payment'].forEach(function (id) {
-          var f = document.getElementById(id);
-          if (!f) return;
-          var isMissing = (id === 'bw-name' && !name.trim()) || (id === 'bw-hotel' && !hotel.trim()) || (id === 'bw-room' && !room.trim()) || (id === 'bw-payment' && !payment);
-          f.classList.toggle('field-invalid', isMissing);
-        });
+        datepickerEl.classList.add('field-invalid');
         return;
       }
       var cart = getCart();
