@@ -1,11 +1,11 @@
 # Mundo Caribe Tours — Estado del proyecto
 
-_Última actualización: 2026-09-10, tras confirmar disponibilidad de Akumal + Cenote Nohoch._
+_Última actualización: 2026-09-10, tras la mejora de copy/UX del checkout (métodos de pago + "Qué sigue")._
 
 ## Último commit y estado del deploy
 
-- **Commit:** `6a670cc` — "Akumal + Cenote Nohoch: confirma disponibilidad martes a domingo" (rama `main`, subido a GitHub).
-- **Deploy:** `scripts/generate_site.py` regenerado, `~/Desktop/mundo-caribe-cloudflare-deploy` actualizada y verificada (schedule `weekly [0,2,3,4,5,6]` presente en `tour/akumal-cenote-nohoch/index.html`), lista para arrastrar a Cloudflare — confirmar en vivo en `https://mundo-caribe-tours.ignacioagustindannunzio.workers.dev/` después de subirla. El deploy a Cloudflare **es manual**: no hay auto-deploy configurado desde GitHub todavía — cada cambio requiere regenerar (`python3 scripts/generate_site.py`), copiar `index.html`, `assets/`, `categoria/`, `tour/` y `todos-los-tours/` a esa carpeta, y arrastrarla a Cloudflare ("New deployment").
+- **Commit:** `8bb4b36` — "Checkout: aclara qué pasa con cada método de pago y agrega 'Qué sigue'" (rama `main`, subido a GitHub). Anterior: `6a670cc` (disponibilidad de Akumal + Cenote Nohoch).
+- **Deploy:** `scripts/generate_site.py` regenerado, `~/Desktop/mundo-caribe-cloudflare-deploy` actualizada y verificada, lista para arrastrar a Cloudflare — confirmar en vivo en `https://mundo-caribe-tours.ignacioagustindannunzio.workers.dev/` después de subirla. El deploy a Cloudflare **es manual**: no hay auto-deploy configurado desde GitHub todavía — cada cambio requiere regenerar (`python3 scripts/generate_site.py`), copiar `index.html`, `assets/`, `categoria/`, `tour/` y `todos-los-tours/` a esa carpeta, y arrastrarla a Cloudflare ("New deployment").
 - Netlify quedó pausado y desconectado de GitHub (decisión tomada por consumo de créditos); ya no es el host activo.
 
 ## Tabla final de disponibilidad (17 tours)
@@ -72,6 +72,21 @@ Reglas por tipo:
 - El total mostrado en la página de cada tour ahora es el precio base en USD, sin recargo de tarjeta ni conversión a MXN (esa lógica depende del método de pago, que sólo se elige en el checkout). El precio final con recargo/conversión sigue viéndose correctamente en el carrito y en el mensaje de WhatsApp.
 - El ítem que se guarda en el carrito nunca tuvo datos del huésped (siempre fueron sólo campos propios del tour: fecha, pax, precio, id) — este cambio es puramente de UI/orden de los pasos, no tocó la estructura de datos ni requirió bump de `CART_VERSION`.
 - Probado en local: agregar al carrito sin ver campos de huésped, editar un ítem (banner y precarga de fecha/pax sin campos de huésped), guardar sin duplicar, y el paso de revisión + mensaje de WhatsApp siguen mostrando nombre/hotel/habitación/pago correctamente.
+
+## Copy y UX del checkout: métodos de pago + "Qué sigue" (agregado 2026-09-10)
+
+Mejora puntual de copy/UX, sin pasarela de pago ni cambios de precio — la web sigue sin cobrar nada: sólo envía una solicitud de reserva por WhatsApp, y Agustín confirma disponibilidad antes de coordinar el pago.
+
+- **Explicación por método de pago** (`PAYMENT_METHOD_NOTES` en `assets/site.js`), visible tanto en el select del carrito como en el resumen de revisión:
+  - Tarjeta de crédito/débito (+5%): "Recibís un link de pago por WhatsApp después de confirmar disponibilidad."
+  - Efectivo USD y efectivo MXN: "Coordinamos el pago para el día de la excursión."
+  - Transferencia USD, ARS y COP: "Te enviamos los datos de pago por WhatsApp tras confirmar."
+- **CTA final del paso de revisión** cambiado a "Enviar solicitud por WhatsApp" (antes "Confirmar y enviar por WhatsApp").
+- **Bloque "Qué sigue"** junto al CTA final: 1. Agustín confirma cupo. 2. Coordinan método de pago. 3. Recibís horario y punto de salida — sin prometer tiempos concretos.
+- Se conserva sin cambios el aviso de que la solicitud no confirma la reserva ni cobra nada.
+- **Akumal + Cenote Nohoch**: se quitó "una de las pocas playas hoy libres de sargazo" de la descripción larga (afirmación no atemporal/no verificable) y se reemplazó por una descripción prudente sin esa mención.
+- No se agregaron horarios, puntos de salida, políticas, idiomas, zonas de pickup ni condiciones de cancelación — quedan fuera hasta que Agustín los confirme.
+- Probado en local: nota correcta para cada método de pago (tarjeta, efectivo, transferencia) en el formulario y en la revisión, CTA y bloque "Qué sigue" visibles en desktop y mobile, y la descripción de Akumal + Cenote Nohoch sin la mención de sargazo.
 
 ## Cambios pendientes
 
