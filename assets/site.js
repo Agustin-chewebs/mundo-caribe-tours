@@ -9,8 +9,11 @@
   var LS_ROOM = 'mc_room';
   var LS_MAPS = 'mc_maps';
   var LS_PAYMENT = 'mc_payment';
+  var LS_EDIT_ID = 'mc_edit_id'; // single-use flag: "open this tour's widget pre-filled to edit cart item X"
   var LS_CART_VERSION = 'mc_cart_v';
-  var CART_VERSION = 4; // bump this whenever the shape of a cart item changes, to auto-clear stale carts
+  var CART_VERSION = 5; // bump this whenever the shape of a cart item changes, to auto-clear stale carts
+
+  function genId() { return Date.now().toString(36) + Math.random().toString(36).slice(2, 8); }
 
   // ---------- payment methods ----------
   // All tour prices are in USD. Fixed reference rate given by Agustín, used
@@ -415,7 +418,9 @@
     updateCartBadge();
   }
 
+  var cartReviewMode = false; // toggles the drawer between the editable form and the read-only review step
   function openCart() {
+    cartReviewMode = false; // always reopen fresh in the editable form, never mid-review
     renderCartDrawer();
     document.getElementById('mc-cart-overlay').classList.add('open');
   }
@@ -439,10 +444,13 @@
     if (!itemsEl) return;
 
     if (cart.length === 0) {
+      cartReviewMode = false;
       itemsEl.innerHTML = '<p class="mc-cart-empty">Todavía no agregaste ningún tour. Elegí uno y tocá "Agregar al carrito" para armar tu reserva.</p>';
       checkoutEl.innerHTML = '';
       return;
     }
+
+    if (cartReviewMode) { renderCartReview(cart); return; }
 
     var total = 0;
     var hasQuote = false;
@@ -456,6 +464,7 @@
         '<div class="mc-cart-item-detail">' + cartItemDateLine(item) + '</div>' +
         '<div class="mc-cart-item-detail">' + cartItemPaxLine(item) + '</div>' +
         '<div class="mc-cart-item-price">' + (typeof item.total === 'number' ? usd(item.total) : 'A cotizar') + '</div>' +
+        '<button type="button" class="mc-cart-edit" data-idx="' + i + '">Editar</button>' +
         '</div>' +
         '<button type="button" class="mc-cart-remove" data-idx="' + i + '" aria-label="Quitar">×</button>' +
         '</div>';
@@ -463,6 +472,16 @@
 
     itemsEl.querySelectorAll('.mc-cart-remove').forEach(function (b) {
       b.addEventListener('click', function () { removeFromCart(parseInt(b.getAttribute('data-idx'), 10)); });
+    });
+    itemsEl.querySelectorAll('.mc-cart-edit').forEach(function (b) {
+      b.addEventListener('click', function () {
+        var item = cart[parseInt(b.getAttribute('data-idx'), 10)];
+        // single-use flag: that tour's own widget picks this up on load,
+        // pre-fills itself from this exact cart item, and REPLACES it in
+        // place instead of adding a duplicate when saved
+        setStr(LS_EDIT_ID, item.id);
+        window.location.href = item.url;
+      });
     });
 
     var name = getStr(LS_NAME);
@@ -491,9 +510,8 @@
       '<div class="booking-field"><label for="mc-payment">Método de pago</label>' +
       paymentSelectHtml('mc-payment', payment) + '</div>' +
       '<p class="payment-note">Precios en USD (1 USD = $' + MXN_REFERENCE_RATE.toFixed(2) + ' MXN, conversión automática si pagás en pesos mexicanos). Transferencia en pesos argentinos o colombianos: cotización del día, datos de pago por WhatsApp.</p>' +
-      '<button type="button" class="btn-primary" id="mc-checkout-cta">Reservar todo por WhatsApp</button>' +
+      '<button type="button" class="btn-primary" id="mc-review-cta">Revisar y reservar</button>' +
       '<p class="contact-form-status" id="mc-checkout-status"></p>' +
-      '<p class="booking-fineprint">Esto no confirma la reserva ni cobra nada — Agustín confirma disponibilidad y coordina el pago directo por WhatsApp.</p>' +
       '<button type="button" class="mc-clear-cart" id="mc-clear-cart">Vaciar carrito</button>';
 
     document.getElementById('mc-name').addEventListener('input', function (e) { setStr(LS_NAME, e.target.value); e.target.classList.toggle('field-invalid', !e.target.value.trim()); });
@@ -504,7 +522,52 @@
     document.getElementById('mc-clear-cart').addEventListener('click', function () {
       if (confirm('¿Vaciar todo el carrito?')) { setCart([]); updateCartBadge(); renderCartDrawer(); }
     });
-    document.getElementById('mc-checkout-cta').addEventListener('click', sendCartToWhatsApp);
+    document.getElementById('mc-review-cta').addEventListener('click', goToReview);
+  }
+
+  // Read-only recap shown after "Revisar y reservar" passes validation —
+  // nothing here is editable; "Volver a editar" goes back to the form,
+  // "Confirmar y enviar" re-validates once more (dates can in principle
+  // go stale while lingering on this screen) and opens WhatsApp.
+  function renderCartReview(cart) {
+    var itemsEl = document.getElementById('mc-cart-items');
+    var checkoutEl = document.getElementById('mc-cart-checkout');
+    var name = getStr(LS_NAME);
+    var hotel = getStr(LS_HOTEL);
+    var room = getStr(LS_ROOM);
+    var maps = getStr(LS_MAPS);
+    var payment = getStr(LS_PAYMENT);
+    var total = 0;
+    var hasQuote = false;
+
+    itemsEl.innerHTML = '<p class="mc-review-label">Revisá tu reserva antes de enviarla</p>' + cart.map(function (item) {
+      if (typeof item.total === 'number') total += item.total;
+      else hasQuote = true;
+      return '<div class="mc-cart-item">' +
+        (item.photo ? '<img src="' + item.photo + '" alt="">' : '<div class="mc-cart-item-noimg">🌴</div>') +
+        '<div class="mc-cart-item-info">' +
+        '<div class="mc-cart-item-name">' + item.name + '</div>' +
+        '<div class="mc-cart-item-detail">' + cartItemDateLine(item) + '</div>' +
+        '<div class="mc-cart-item-detail">' + cartItemPaxLine(item) + '</div>' +
+        '<div class="mc-cart-item-price">' + (typeof item.total === 'number' ? usd(item.total) : 'A cotizar') + '</div>' +
+        '</div></div>';
+    }).join('');
+
+    checkoutEl.innerHTML =
+      '<div class="mc-cart-total-row"><span>Total</span><strong>' + formatTotal(total, payment) + (hasQuote ? ' + ítems a cotizar' : '') + '</strong></div>' +
+      '<div class="mc-review-summary">' +
+      '<p><strong>Nombre:</strong> ' + name + '</p>' +
+      '<p><strong>Hotel:</strong> ' + hotel + ' · Habitación ' + room + '</p>' +
+      (maps ? '<p><strong>Ubicación compartida:</strong> sí</p>' : '') +
+      '<p><strong>Método de pago:</strong> ' + paymentLabel(payment) + '</p>' +
+      '</div>' +
+      '<p class="booking-fineprint">Esto no confirma la reserva ni cobra nada — Agustín confirma disponibilidad y coordina el pago directo por WhatsApp.</p>' +
+      '<button type="button" class="btn-primary" id="mc-confirm-send">Confirmar y enviar por WhatsApp</button>' +
+      '<p class="contact-form-status" id="mc-checkout-status"></p>' +
+      '<button type="button" class="btn-secondary" id="mc-back-to-edit">← Volver a editar</button>';
+
+    document.getElementById('mc-confirm-send').addEventListener('click', confirmAndSendWhatsApp);
+    document.getElementById('mc-back-to-edit').addEventListener('click', backToEdit);
   }
 
   function shareLocation() {
@@ -523,46 +586,43 @@
     }, { timeout: 10000 });
   }
 
-  function sendCartToWhatsApp() {
-    var cart = getCart();
-    if (cart.length === 0) return;
-    var name = getStr(LS_NAME);
-    var hotel = getStr(LS_HOTEL);
-    var room = getStr(LS_ROOM);
-    var maps = getStr(LS_MAPS);
-    var payment = getStr(LS_PAYMENT);
-
-    // Re-check every item's date against ITS OWN schedule right before
-    // sending — a date that was valid when added could, in principle,
-    // no longer be (cart loaded from an old localStorage snapshot, etc).
-    // Visually blocking bad days in the calendar isn't enough on its own.
+  // Re-checks every item's date against ITS OWN schedule (a date that was
+  // valid when added could, in principle, no longer be — cart loaded from
+  // an old localStorage snapshot, a day boundary crossed while lingering
+  // on the review screen, etc.) plus the shared guest fields. Pure: no DOM
+  // side effects, so it's safe to call both to decide whether to enter the
+  // review step and again right before actually sending.
+  function checkoutValidate(cart, name, hotel, room, payment) {
     var invalidTour = cart.filter(function (item) { return !isDateAllowed(item.date, item.schedule); })[0];
-
     var missing = [];
     if (!name.trim()) missing.push('el nombre completo');
     if (!hotel.trim()) missing.push('el hotel');
     if (!room.trim()) missing.push('el número de habitación');
     if (!payment) missing.push('el método de pago');
-    if (invalidTour || missing.length) {
-      var status = document.getElementById('mc-checkout-status');
-      if (status) {
-        status.textContent = invalidTour
-          ? 'La fecha de "' + invalidTour.name + '" ya no es válida — abrí ese tour y elegí otra.'
-          : 'Completá ' + missing.join(', ') + ' antes de reservar.';
-        status.className = 'contact-form-status error';
-      }
-      ['mc-name', 'mc-hotel', 'mc-room', 'mc-payment'].forEach(function (id) {
-        var f = document.getElementById(id);
-        if (!f) return;
-        var isMissing = (id === 'mc-name' && !name.trim()) || (id === 'mc-hotel' && !hotel.trim()) || (id === 'mc-room' && !room.trim()) || (id === 'mc-payment' && !payment);
-        f.classList.toggle('field-invalid', isMissing);
-      });
-      return;
-    }
+    return { ok: !invalidTour && missing.length === 0, missing: missing, invalidTour: invalidTour };
+  }
 
-    // Each tour keeps its OWN date and its OWN passenger breakdown — never
-    // summed or shared across tours, so the same travel party doing two
-    // excursions isn't miscounted as twice the people.
+  function showCheckoutErrors(result) {
+    var status = document.getElementById('mc-checkout-status');
+    if (status) {
+      status.textContent = result.invalidTour
+        ? 'La fecha de "' + result.invalidTour.name + '" ya no es válida — abrí ese tour y elegí otra.'
+        : 'Completá ' + result.missing.join(', ') + ' antes de reservar.';
+      status.className = 'contact-form-status error';
+    }
+    var name = getStr(LS_NAME), hotel = getStr(LS_HOTEL), room = getStr(LS_ROOM), payment = getStr(LS_PAYMENT);
+    ['mc-name', 'mc-hotel', 'mc-room', 'mc-payment'].forEach(function (id) {
+      var f = document.getElementById(id);
+      if (!f) return;
+      var isMissing = (id === 'mc-name' && !name.trim()) || (id === 'mc-hotel' && !hotel.trim()) || (id === 'mc-room' && !room.trim()) || (id === 'mc-payment' && !payment);
+      f.classList.toggle('field-invalid', isMissing);
+    });
+  }
+
+  // Each tour keeps its OWN date and its OWN passenger breakdown — never
+  // summed or shared across tours, so the same travel party doing two
+  // excursions isn't miscounted as twice the people.
+  function buildWhatsAppLines(cart, name, hotel, room, maps, payment) {
     var lines = ['¡Hola! Quiero reservar estos tours:', '', 'Reserva a nombre de: ' + name, ''];
     var total = 0;
     var anyTentative = false;
@@ -581,6 +641,39 @@
     if (maps) lines.push('Ubicación: ' + maps);
     lines.push('');
     lines.push('⚠️ Esto no es una reserva confirmada ni un cobro — Agustín confirma disponibilidad' + (anyTentative ? ' (hay fechas tentativas a coordinar)' : '') + ' y coordina el pago directo por WhatsApp.');
+    return lines;
+  }
+
+  function goToReview() {
+    var cart = getCart();
+    if (cart.length === 0) return;
+    var name = getStr(LS_NAME), hotel = getStr(LS_HOTEL), room = getStr(LS_ROOM), payment = getStr(LS_PAYMENT);
+    var result = checkoutValidate(cart, name, hotel, room, payment);
+    if (!result.ok) { showCheckoutErrors(result); return; }
+    cartReviewMode = true;
+    renderCartDrawer();
+  }
+
+  function backToEdit() {
+    cartReviewMode = false;
+    renderCartDrawer();
+  }
+
+  function confirmAndSendWhatsApp() {
+    var cart = getCart();
+    if (cart.length === 0) return;
+    var name = getStr(LS_NAME), hotel = getStr(LS_HOTEL), room = getStr(LS_ROOM), maps = getStr(LS_MAPS), payment = getStr(LS_PAYMENT);
+    var result = checkoutValidate(cart, name, hotel, room, payment);
+    if (!result.ok) {
+      // Something went stale while sitting on the review screen (rare) —
+      // bounce back to the editable form with the specific error shown,
+      // rather than silently failing to open WhatsApp.
+      cartReviewMode = false;
+      renderCartDrawer();
+      showCheckoutErrors(result);
+      return;
+    }
+    var lines = buildWhatsAppLines(cart, name, hotel, room, maps, payment);
     window.open(waLink(lines.join('\n')), '_blank', 'noopener');
   }
 
@@ -598,7 +691,36 @@
     var photoEl = document.querySelector('.tour-hero-photo');
     var photoSrc = photoEl ? photoEl.getAttribute('src') : null;
 
+    // Arrived here via "Editar" on a cart item? Pre-fill this widget from
+    // that exact item and, on save, REPLACE it in the cart in place
+    // instead of adding a duplicate. LS_EDIT_ID is single-use: consumed
+    // (cleared) the instant we read it, so a later plain visit to this
+    // same tour page never re-triggers edit mode by accident.
+    var editItemId = getStr(LS_EDIT_ID);
+    if (editItemId) setStr(LS_EDIT_ID, '');
+    var editIndex = -1, editItem = null;
+    if (editItemId) {
+      var existingCart = getCart();
+      for (var ci = 0; ci < existingCart.length; ci++) {
+        if (existingCart[ci].id === editItemId && existingCart[ci].url === pageUrl) {
+          editIndex = ci; editItem = existingCart[ci]; break;
+        }
+      }
+    }
+
     var state = { date: '', adults: 1, children: 0, infants: 0, persons: 1, tierIndex: 0 };
+    if (editItem) {
+      state.date = editItem.date || '';
+      if (editItem.adults != null) state.adults = editItem.adults;
+      if (editItem.children != null) state.children = editItem.children;
+      if (editItem.persons != null) state.persons = editItem.persons;
+      state.infants = editItem.infants || 0;
+      if (editItem.optionLabel && data.tiers) {
+        for (var ti = 0; ti < data.tiers.length; ti++) {
+          if (data.tiers[ti].label === editItem.optionLabel) { state.tierIndex = ti; break; }
+        }
+      }
+    }
     var hasInfants = data.type === 'adult_child' || data.type === 'per_person' || data.type === 'tiers';
     // schedule.type 'seasonal' or 'on_request' = no known fixed weekly
     // cadence, so any allowed date is pickable but must read as tentative,
@@ -624,7 +746,10 @@
         '</div></div>';
     }
 
-    var html = '<h3>' + (data.type === 'quote' ? 'Pedí tu cotización' : 'Reservá este tour') + '</h3>';
+    var html = editItem
+      ? '<p class="mc-editing-banner">✎ Estás editando este tour en tu carrito. <a href="#" id="bw-cancel-edit">Cancelar</a></p>'
+      : '';
+    html += '<h3>' + (data.type === 'quote' ? 'Pedí tu cotización' : 'Reservá este tour') + '</h3>';
 
     if (data.type !== 'quote' && data.type !== 'duration_group') {
       var priceLabel = data.type === 'adult_child'
@@ -650,8 +775,8 @@
     if (data.type === 'tiers' || data.type === 'duration_group') {
       html += '<div class="booking-field"><label>' + (data.type === 'duration_group' ? 'Duración' : 'Opción') + '</label><div class="tier-options" id="bw-tiers">';
       data.tiers.forEach(function (t, i) {
-        html += '<label class="tier-option' + (i === 0 ? ' selected' : '') + '" data-tier="' + i + '">' +
-          '<span><input type="radio" name="bw-tier" value="' + i + '"' + (i === 0 ? ' checked' : '') + '> ' + t.label + '</span>' +
+        html += '<label class="tier-option' + (i === state.tierIndex ? ' selected' : '') + '" data-tier="' + i + '">' +
+          '<span><input type="radio" name="bw-tier" value="' + i + '"' + (i === state.tierIndex ? ' checked' : '') + '> ' + t.label + '</span>' +
           '<span class="tier-price">' + usd(t.price) + (data.type === 'tiers' ? '/persona' : '') + '</span></label>';
       });
       html += '</div></div>';
@@ -692,10 +817,10 @@
       paymentSelectHtml('bw-payment', getStr(LS_PAYMENT)) + '</div>';
     html += '<p class="payment-note">Precios en USD (1 USD = $' + MXN_REFERENCE_RATE.toFixed(2) + ' MXN, conversión automática si pagás en pesos mexicanos). Transferencia en pesos argentinos o colombianos: cotización del día, datos de pago por WhatsApp.</p>';
 
-    html += '<button type="button" class="btn-primary" id="bw-cta">🛒 Agregar al carrito</button>';
+    html += '<button type="button" class="btn-primary" id="bw-cta">' + (editItem ? 'Guardar cambios' : '🛒 Agregar al carrito') + '</button>';
     html += '<p class="contact-form-status" id="bw-checkout-status"></p>';
     html += '<div id="bw-added" class="bw-added" hidden>' +
-      '<p>✓ Agregado al carrito</p>' +
+      '<p>' + (editItem ? '✓ Cambios guardados' : '✓ Agregado al carrito') + '</p>' +
       '<button type="button" class="btn-primary" id="bw-goto-cart">Ver carrito y reservar →</button>' +
       '<button type="button" class="btn-secondary" id="bw-keep-browsing">Seguir viendo tours</button>' +
       '</div>';
@@ -708,6 +833,7 @@
     initDatePicker(datepickerEl, {
       schedule: data.schedule,
       tentative: tentative,
+      initialISO: state.date || null,
       onSelect: function (iso) {
         state.date = iso;
         datepickerEl.classList.remove('field-invalid');
@@ -812,7 +938,8 @@
       }
       var cart = getCart();
       var fields = cartFields();
-      cart.push({
+      var record = {
+        id: editItem ? editItem.id : genId(),
         name: data.name,
         date: state.date,
         tentative: tentative,
@@ -825,12 +952,17 @@
         total: data.type === 'quote' ? null : calcTotal(),
         url: pageUrl,
         photo: photoSrc,
-      });
+      };
+      if (editIndex !== -1) cart[editIndex] = record; else cart.push(record);
       setCart(cart);
       updateCartBadge();
       document.getElementById('bw-cta').hidden = true;
       document.getElementById('bw-added').hidden = false;
     });
+    var cancelEditLink = document.getElementById('bw-cancel-edit');
+    if (cancelEditLink) {
+      cancelEditLink.addEventListener('click', function (e) { e.preventDefault(); window.mcOpenCart(); });
+    }
     document.getElementById('bw-goto-cart').addEventListener('click', function () { window.mcOpenCart(); });
     document.getElementById('bw-keep-browsing').addEventListener('click', function () {
       document.getElementById('bw-added').hidden = true;
