@@ -377,11 +377,17 @@ CATEGORY_TAG = {
 
 # "Conocé a Agustín" story viewer (home). Photos are Agustín's own,
 # untouched (no crop, no edit, stickers left as-is) — order is curated by
-# hand, not random: photo #1 is fixed as the intro, then it alternates
-# with criteria (paisaje/lugar real -> Agustín viviendo la experiencia ->
-# aventura/tour -> momento humano) without repeating the same kind twice
-# in a row. Party/nightlife photos (michelada, yate) are placed later in
-# the sequence on purpose — never first, never in the closing stretch.
+# hand, not random:
+#   - #1 and #2 are FIXED (intro, then the clean Holbox sunset — no tag,
+#     no text, nothing added).
+#   - Last is FIXED too (family photo — no tag, custom `alt`, nothing else).
+#   - Everything in between alternates with criteria (paisaje/lugar real
+#     -> Agustín viviendo la experiencia -> aventura/tour -> momento
+#     humano) without repeating the same kind twice in a row.
+#   - Party/nightlife photos (michelada, yate) are placed later in the
+#     sequence on purpose — never first, never in the closing stretch.
+#   - The video sits advanced in the sequence, right at the seam between
+#     an aventura photo and a momento-humano one — never first or last.
 #
 # `tag` is only set for the photos with an explicit, confirmed link from
 # Agustín — never invented for the others. There is no visible chip: the
@@ -391,12 +397,20 @@ CATEGORY_TAG = {
 # image — only the sticker that was already there becomes tappable.
 # `pos` values were measured by hand against each photo.
 #
-# Xplor by Xcaret (both photos) had a `tag` before but it was removed on
-# request (2026-09-11): that park has closed, so neither photo links or
-# labels it anymore — the original in-photo logo/branding stays exactly
-# as it was taken, just with no tap action at all.
+# Xplor by Xcaret / Xavage (both photos) had a `tag` before but it was
+# removed on request (2026-09-11): that park has closed, so neither
+# photo links or labels it anymore — the original in-photo logo/
+# branding stays exactly as it was taken, just with no tap action.
+#
+# `type: 'video'` (added 2026-09-11) is the one video in the set. The
+# source .MOV (HEVC) isn't reliably playable across browsers, so it was
+# converted once, losslessly-enough, to an optimized H.264 .mp4 at its
+# original portrait aspect (`avconvert --preset Preset960x540`, ~2.1MB
+# for 5s) — same untouched content, just a web-safe codec/container.
+# `alt` defaults to '' (decorative) and is only set where requested.
 AGUSTIN_STORIES = [
     {'file': '73DB1620-354E-4F1A-A292-32E337B52ED9.JPG', 'tag': None},
+    {'file': '85052D02-77C8-4E2C-8209-768EB53517B4.JPG', 'tag': None},
     {'file': '9FE46935-BC9E-4314-B75B-C1E4CD5D2782.JPG', 'tag': None},
     {'file': '508D33D4-A80D-49E0-A8FC-3F43D32F49B8.JPG', 'tag': None},
     {'file': '18220B3C-E527-4116-BD4F-E5E308EF746C.JPG', 'tag': None},
@@ -420,6 +434,7 @@ AGUSTIN_STORIES = [
         'url': 'https://maps.app.goo.gl/H2GBiMk6z55NbCSQ9',
         'pos': {'left': 58, 'top': 11, 'width': 37, 'height': 5}}},
     {'file': 'DBDF124B-F458-4DE1-B5E4-5D53F813A0D1.JPG', 'tag': None},
+    {'file': 'F8E4E379-7210-478B-973E-8399FCF55AE3.mp4', 'type': 'video', 'tag': None},
     {'file': 'D7C971EA-1CB5-4252-A3CD-D83431A870D8.JPG', 'tag': {
         'type': 'maps', 'label': 'Playa de Xpu-Ha',
         'url': 'https://maps.app.goo.gl/gYmiBgkPqPkvBeMt7',
@@ -430,6 +445,8 @@ AGUSTIN_STORIES = [
         'url': 'https://www.instagram.com/puravida.wey/',
         'pos': {'left': 20, 'top': 6, 'width': 38, 'height': 4}}},
     {'file': 'C758011B-6608-477E-B2D0-295D9450640B.JPG', 'tag': None},
+    {'file': '74F7FEFD-FB33-4CB8-8672-A80F3416BFC8.JPG', 'tag': None,
+     'alt': 'Agustín junto a su familia durante un viaje'},
 ]
 
 # ---------------------------------------------------------------------------
@@ -521,6 +538,7 @@ def render_nav():
           <a class="nav-dropdown-all" href="/todos-los-tours/">Ver todos los tours</a>
         </div>
       </li>
+      <li><a href="/guias/">Guías</a></li>
       <li><a href="/#contacto">Contacto</a></li>
     </ul>
     <div class="nav-right">
@@ -538,6 +556,7 @@ def render_nav():
       </div>
       <a class="mobile-menu-all" href="/todos-los-tours/">Ver todos los tours</a>
       <div class="nav-dropdown-sep"></div>
+      <a class="mobile-menu-link" href="/guias/">Guías</a>
       <a class="mobile-menu-link" href="/#contacto">Contacto</a>
       <a class="btn-whatsapp mobile-menu-wa" href="{wa_link(wa_text)}" target="_blank" rel="noopener">Escribinos por WhatsApp</a>
     </div>
@@ -735,6 +754,8 @@ def render_agustin_stories():
     stories_json = json.dumps([
         {
             'src': '/assets/stories/' + s['file'],
+            'type': s.get('type', 'photo'),
+            'alt': s.get('alt', ''),
             'tag': s['tag'],
         }
         for s in AGUSTIN_STORIES
@@ -757,7 +778,10 @@ def render_agustin_stories():
   </div>
   <div class="mc-story-media" id="mc-story-media">
     <img id="mc-story-img" src="" alt="">
+    <video id="mc-story-video" muted playsinline loop hidden></video>
     <a id="mc-story-hit" class="mc-story-hit" href="#" target="_blank" rel="noopener noreferrer" hidden></a>
+    <button type="button" class="mc-story-nav mc-story-nav-prev" id="mc-story-prev" aria-label="Historia anterior">‹</button>
+    <button type="button" class="mc-story-nav mc-story-nav-next" id="mc-story-next" aria-label="Historia siguiente">›</button>
   </div>
 </div>'''
 
@@ -1019,6 +1043,102 @@ def render_all_tours_page():
 
 
 # ---------------------------------------------------------------------------
+# "GUÍAS DEL CARIBE" (blog base, added 2026-09-11)
+# ---------------------------------------------------------------------------
+# Empty on purpose — no CMS, no AI, no feed, nothing connected yet. This is
+# just the structure so a real guide can be added later by appending one
+# dict here (see docs/PROJECT_STATUS.md for the exact steps). NEVER add a
+# placeholder/example entry to make the page "look full" — the empty state
+# below is the intended look until a real guide exists.
+#
+# Schema for one guide:
+#   {
+#     'title': str,             # article title, used as <h1> and in cards
+#     'slug': str,               # URL -> /guias/<slug>/ (lowercase-with-dashes)
+#     'date': 'YYYY-MM-DD',      # publish date, shown on the card and article
+#     'description': str,        # short summary — card blurb + fallback SEO description
+#     'category': str,           # free-form label shown on the card, e.g. 'Cenotes'
+#     'image': str,              # filename under /assets/guias/ (featured image)
+#     'content_html': str,       # article body as ready-to-render HTML (already safe/escaped)
+#     'seo': {'title': str, 'description': str},  # optional — overrides the defaults above
+#   }
+GUIDES = []
+
+
+def render_guide_card(guide):
+    # Reuses the same .tour-card look as every other card on the site
+    # (no separate card style to maintain) — only the content differs.
+    return f'''<a class="tour-card guide-card" href="/guias/{guide['slug']}/">
+        <img class="tour-card-photo" src="/assets/guias/{guide['image']}" alt="{guide['title']}" loading="lazy">
+        <div class="tour-card-body">
+        <span class="card-meta">{guide['category']}</span>
+        <h3>{guide['title']}</h3>
+        <p class="desc">{guide['description']}</p>
+        </div>
+      </a>'''
+
+
+def render_guides_index():
+    title = 'Guías del Caribe — Mundo Caribe Tours'
+    desc = 'Guías reales de Agustín para elegir mejor tu experiencia en la Riviera Maya.'
+    path = '/guias/'
+    head = render_head(title, desc, path)
+
+    if GUIDES:
+        content = grid_wrap(''.join(render_guide_card(g) for g in GUIDES))
+    else:
+        content = '''<div class="guides-empty reveal">
+          <p>Próximamente: guías reales para elegir mejor tu experiencia en Riviera Maya.</p>
+        </div>'''
+
+    body = render_nav() + f'''
+<section class="category-hero reveal">
+  <div class="container">
+    {render_breadcrumb([('Inicio', '/'), ('Guías', None)])}
+    <h1>Guías del Caribe</h1>
+    <p>Consejos y recomendaciones reales de Agustín para armar tu viaje por la Riviera Maya.</p>
+  </div>
+</section>
+<section class="reveal">
+  <div class="container">
+    {content}
+  </div>
+</section>
+''' + render_footer()
+
+    write_file('guias/index.html', page_shell(head, body))
+
+
+def render_guide_page(guide):
+    """Renders one guide/article page. Not called on any real content yet
+    (GUIDES is empty) — kept ready for the day a real guide is added."""
+    seo = guide.get('seo') or {}
+    title = seo.get('title') or f'{guide["title"]} — Mundo Caribe Tours'
+    desc = seo.get('description') or guide['description']
+    path = f'/guias/{guide["slug"]}/'
+    og_image = BASE_URL + f'/assets/guias/{guide["image"]}'
+    head = render_head(title, desc, path, og_image=og_image)
+
+    body = render_nav() + f'''
+<section class="category-hero reveal">
+  <div class="container">
+    {render_breadcrumb([('Inicio', '/'), ('Guías', '/guias/'), (guide['title'], None)])}
+    <p class="guide-meta">{guide['category']} · {guide['date']}</p>
+    <h1>{guide['title']}</h1>
+  </div>
+</section>
+<section class="reveal">
+  <div class="container guide-article">
+    <img class="guide-hero-photo" src="/assets/guias/{guide['image']}" alt="{guide['title']}">
+    {guide['content_html']}
+  </div>
+</section>
+''' + render_footer()
+
+    write_file(f'guias/{guide["slug"]}/index.html', page_shell(head, body))
+
+
+# ---------------------------------------------------------------------------
 # MAIN
 # ---------------------------------------------------------------------------
 
@@ -1029,7 +1149,10 @@ def main():
     for tour in TOURS:
         render_tour_page(tour)
     render_all_tours_page()
-    print(f'Generated: 1 home + {len(CATEGORIES)} category pages + {len(TOURS)} tour pages + 1 all-tours page')
+    render_guides_index()
+    for guide in GUIDES:
+        render_guide_page(guide)
+    print(f'Generated: 1 home + {len(CATEGORIES)} category pages + {len(TOURS)} tour pages + 1 all-tours page + 1 guides index + {len(GUIDES)} guide pages')
 
 
 if __name__ == '__main__':

@@ -1207,9 +1207,12 @@
     var stories = JSON.parse(dataEl.textContent);
     var barsEl = document.getElementById('mc-story-bars');
     var imgEl = document.getElementById('mc-story-img');
+    var videoEl = document.getElementById('mc-story-video');
     var hitEl = document.getElementById('mc-story-hit');
     var media = document.getElementById('mc-story-media');
     var closeBtn = document.getElementById('mc-story-close');
+    var prevBtn = document.getElementById('mc-story-prev');
+    var nextBtn = document.getElementById('mc-story-next');
     var reduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
 
     barsEl.innerHTML = stories.map(function () {
@@ -1225,22 +1228,29 @@
     }
     function pauseTimer() {
       if (currentAnim && currentAnim.playState === 'running') currentAnim.pause();
+      if (stories[index].type === 'video') videoEl.pause();
     }
     function resumeTimer() {
       if (currentAnim && currentAnim.playState === 'paused') currentAnim.play();
+      if (stories[index].type === 'video') videoEl.play().catch(function () {});
     }
-    function startTimer() {
+    // durationMs: fixed for photos, but a video's bar has to last exactly
+    // as long as the video itself — the caller passes the real duration
+    // once it's known (the video's metadata), not before.
+    function startTimer(durationMs) {
       var fill = fills[index];
       if (reduceMotion) {
         // No auto-advance, no animated motion — just mark progress
-        // statically so the viewer still shows where you are.
+        // statically so the viewer still shows where you are. A video
+        // still plays (it's the content the visitor opened), it just
+        // won't auto-advance to the next story on its own.
         fill.style.width = '100%';
         return;
       }
       fill.style.width = '';
       currentAnim = fill.animate(
         [{ width: '0%' }, { width: '100%' }],
-        { duration: STORY_DURATION_MS, easing: 'linear', fill: 'forwards' }
+        { duration: durationMs, easing: 'linear', fill: 'forwards' }
       );
       currentAnim.onfinish = function () { goNext(); };
     }
@@ -1273,11 +1283,33 @@
 
     function renderIndex() {
       fills.forEach(function (fill, i) { fill.style.width = i < index ? '100%' : '0%'; });
-      var s = stories[index];
-      imgEl.src = s.src;
-      updateHit(s.tag);
       stopTimer();
-      startTimer();
+      videoEl.pause();
+      var s = stories[index];
+      if (s.type === 'video') {
+        imgEl.hidden = true;
+        videoEl.hidden = false;
+        videoEl.setAttribute('aria-label', s.alt || '');
+        if (videoEl.currentSrc !== s.src) videoEl.src = s.src;
+        videoEl.currentTime = 0;
+        // The bar has to run exactly as long as the video — wait for its
+        // real duration (metadata) before starting it, instead of
+        // guessing with the photos' fixed duration.
+        var onReady = function () {
+          videoEl.removeEventListener('loadedmetadata', onReady);
+          if (stories[index] === s) startTimer((videoEl.duration || 5) * 1000);
+        };
+        if (videoEl.readyState >= 1 && videoEl.duration) onReady();
+        else videoEl.addEventListener('loadedmetadata', onReady);
+        videoEl.play().catch(function () {});
+      } else {
+        videoEl.hidden = true;
+        imgEl.hidden = false;
+        imgEl.alt = s.alt || '';
+        imgEl.src = s.src;
+        startTimer(STORY_DURATION_MS);
+      }
+      updateHit(s.tag);
     }
 
     function showIndex(i) {
@@ -1296,12 +1328,15 @@
     }
     function closeViewer() {
       stopTimer();
+      videoEl.pause();
       overlay.hidden = true;
       document.body.style.overflow = '';
     }
 
     entry.addEventListener('click', function () { openViewer(0); });
     closeBtn.addEventListener('click', closeViewer);
+    prevBtn.addEventListener('click', function (e) { e.stopPropagation(); goPrev(); });
+    nextBtn.addEventListener('click', function (e) { e.stopPropagation(); goNext(); });
     document.addEventListener('keydown', function (e) {
       if (overlay.hidden) return;
       if (e.key === 'Escape') closeViewer();
@@ -1316,7 +1351,7 @@
     var TAP_MAX_MS = 300, MOVE_TOLERANCE = 10, SWIPE_THRESHOLD = 50;
     var pStart = null;
     media.addEventListener('pointerdown', function (e) {
-      if (e.target.closest('.mc-story-hit')) return;
+      if (e.target.closest('.mc-story-hit') || e.target.closest('.mc-story-nav')) return;
       pStart = { x: e.clientX, y: e.clientY, t: Date.now() };
       pauseTimer();
     });
@@ -1348,7 +1383,10 @@
     // current story in whichever mode now applies.
     window.matchMedia('(prefers-reduced-motion: reduce)').addEventListener('change', function (e) {
       reduceMotion = e.matches;
-      if (!overlay.hidden) { stopTimer(); startTimer(); }
+      if (!overlay.hidden) {
+        stopTimer();
+        startTimer(stories[index].type === 'video' ? (videoEl.duration || 5) * 1000 : STORY_DURATION_MS);
+      }
     });
   }
 })();

@@ -148,6 +148,15 @@ section { padding: var(--space-6) 0; }
 .category-hero h1 { font-size: clamp(1.9rem, 3.6vw, 2.8rem); }
 .category-hero p { margin-top: var(--space-2); color: rgba(18,48,44,0.72); max-width: 62ch; }
 
+/* ---------- "Guías del Caribe" (blog base) ---------- */
+/* Empty state is intentional, not a loading/broken look — a dashed
+   frame reads as "reserved for future content", not empty-by-accident. */
+.guides-empty { text-align: center; padding: var(--space-6) var(--space-3); color: rgba(18,48,44,0.62); font-size: 1.05rem; border: 1px dashed rgba(28,74,68,0.28); border-radius: var(--radius); }
+.guide-meta { margin-top: var(--space-2); font-size: 0.8rem; color: var(--teal-mid); font-weight: 500; text-transform: uppercase; letter-spacing: 0.04em; }
+.guide-article { max-width: 72ch; margin: 0 auto; }
+.guide-hero-photo { width: 100%; height: min(48vh, 420px); object-fit: cover; border-radius: var(--radius); margin-bottom: var(--space-4); }
+.guide-article p { margin-top: var(--space-3); color: rgba(18,48,44,0.82); }
+
 /* ---------- tour page ---------- */
 .tour-hero-photo { width: 100%; height: min(48vh, 460px); object-fit: cover; border-radius: var(--radius); margin-top: var(--space-3); }
 .tour-page-grid { display: grid; grid-template-columns: 1.6fr 1fr; gap: var(--space-5); align-items: start; margin-top: var(--space-5); }
@@ -301,7 +310,7 @@ footer .container { display: flex; justify-content: space-between; flex-wrap: wr
 /* ---------- "Conocé a Agustín" story viewer ---------- */
 .mc-story-entry-section { padding: var(--space-3) 0; }
 .mc-story-entry { display: flex; align-items: center; gap: var(--space-2); margin: 0 auto; background: none; border: none; cursor: pointer; padding: var(--space-2) 0; }
-.mc-story-ring { flex: none; width: 76px; height: 76px; border-radius: 50%; padding: 3px; background: linear-gradient(135deg, var(--teal-mid), var(--sand)); }
+.mc-story-ring { flex: none; width: 76px; height: 76px; border-radius: 50%; padding: 3px; background: linear-gradient(135deg, var(--teal-deep), var(--sand)); }
 .mc-story-ring img { width: 100%; height: 100%; border-radius: 50%; object-fit: contain; background: var(--cream); border: 3px solid var(--cream); }
 .mc-story-entry-label { font-family: var(--font-display); font-weight: 600; font-size: 1.15rem; color: var(--teal-deep); }
 @media (prefers-reduced-motion: no-preference) {
@@ -321,7 +330,20 @@ footer .container { display: flex; justify-content: space-between; flex-wrap: wr
 .mc-story-header-name { color: #fff; font-weight: 600; font-size: 0.9rem; text-shadow: 0 1px 3px rgba(0,0,0,0.5); }
 .mc-story-close { background: none; border: none; color: #fff; font-size: 1.8rem; line-height: 1; cursor: pointer; padding: 4px 8px; }
 .mc-story-media { position: relative; width: 100%; height: 100%; display: flex; align-items: center; justify-content: center; touch-action: none; }
-.mc-story-media img { max-width: 100%; max-height: 100%; width: auto; height: auto; object-fit: contain; user-select: none; -webkit-user-select: none; }
+.mc-story-media img, .mc-story-media video { max-width: 100%; max-height: 100%; width: auto; height: auto; object-fit: contain; user-select: none; -webkit-user-select: none; }
+
+/* Desktop-only prev/next arrows — hidden by default, revealed on hover
+   over the photo/video itself (never on touch: `hover: hover` +
+   `pointer: fine` excludes touchscreens, which navigate by tap/swipe
+   instead). Kept reachable by keyboard via :focus-visible regardless. */
+.mc-story-nav { position: absolute; top: 50%; transform: translateY(-50%); z-index: 5; width: 40px; height: 40px; border-radius: 50%; border: none; background: rgba(0,0,0,0.35); color: #fff; font-size: 1.4rem; line-height: 1; cursor: pointer; display: flex; align-items: center; justify-content: center; opacity: 0; pointer-events: none; transition: opacity 0.15s ease, background 0.15s ease; }
+.mc-story-nav-prev { left: 14px; }
+.mc-story-nav-next { right: 14px; }
+.mc-story-nav:focus-visible { opacity: 1; pointer-events: auto; outline: 2px solid #fff; outline-offset: 2px; }
+@media (hover: hover) and (pointer: fine) {
+  .mc-story-media:hover .mc-story-nav { opacity: 1; pointer-events: auto; }
+  .mc-story-nav:hover { background: rgba(0,0,0,0.55); }
+}
 /* Invisible tap target laid exactly over a photo's OWN original sticker
    (location pin / mention) — no chip, no pill, no extra text drawn on
    top. Position/size come from that story's `pos` (JS sets left/top/
