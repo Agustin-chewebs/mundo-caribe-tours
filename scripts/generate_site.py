@@ -382,8 +382,19 @@ CATEGORY_TAG = {
 # aventura/tour -> momento humano) without repeating the same kind twice
 # in a row. Party/nightlife photos (michelada, yate) are placed later in
 # the sequence on purpose — never first, never in the closing stretch.
+#
 # `tag` is only set for the photos with an explicit, confirmed link from
-# Agustín — never invented for the others.
+# Agustín — never invented for the others. There is no visible chip: the
+# link is rendered as an invisible clickable area placed exactly over
+# that photo's own original sticker (`pos`, in percent of the photo
+# itself: left/top/width/height), so nothing new is drawn on top of the
+# image — only the sticker that was already there becomes tappable.
+# `pos` values were measured by hand against each photo.
+#
+# Xplor by Xcaret (both photos) had a `tag` before but it was removed on
+# request (2026-09-11): that park has closed, so neither photo links or
+# labels it anymore — the original in-photo logo/branding stays exactly
+# as it was taken, just with no tap action at all.
 AGUSTIN_STORIES = [
     {'file': '73DB1620-354E-4F1A-A292-32E337B52ED9.JPG', 'tag': None},
     {'file': '9FE46935-BC9E-4314-B75B-C1E4CD5D2782.JPG', 'tag': None},
@@ -394,29 +405,30 @@ AGUSTIN_STORIES = [
     {'file': '9E7063C3-BBA3-4DFE-A10A-E8ED82B77C6D.JPG', 'tag': None},
     {'file': 'C20F7DA9-2CA0-4BF5-BB0B-0FFD3BF9A9C4.JPG', 'tag': {
         'type': 'maps', 'label': 'ATIK World Tulum',
-        'url': 'https://maps.app.goo.gl/qMsWNdN8GG8sZc92A'}},
+        'url': 'https://maps.app.goo.gl/qMsWNdN8GG8sZc92A',
+        'pos': {'left': 16, 'top': 74, 'width': 67, 'height': 7}}},
     {'file': '93D223B9-97FA-4309-9673-3B907F9A95ED.JPG', 'tag': None},
     {'file': '26E88537-A8F4-4292-A1F9-9C87074E29BD.JPG', 'tag': None},
     {'file': 'C5C68CEC-2A0A-4E92-958B-866E7A3BA276.JPG', 'tag': None},
-    {'file': '5A00AAF0-5D22-4749-8230-E5E54E51151F.JPG', 'tag': {
-        'type': 'maps', 'label': 'Xplor by Xcaret',
-        'url': 'https://maps.app.goo.gl/qu67vocsbQ7r9vHLA'}},
+    {'file': '5A00AAF0-5D22-4749-8230-E5E54E51151F.JPG', 'tag': None},
     {'file': '70F8514D-5307-4341-AD23-73B5D22A81E9.JPG', 'tag': {
         'type': 'maps', 'label': "Sian Ka'an · Reserva de la Biosfera",
-        'url': 'https://maps.app.goo.gl/2PZxa7mA4U2pAAHW7'}},
+        'url': 'https://maps.app.goo.gl/2PZxa7mA4U2pAAHW7',
+        'pos': {'left': 20, 'top': 21, 'width': 57, 'height': 5}}},
     {'file': 'FD94F6C5-4EB0-4AB8-B8F5-8295A4A2257F.JPG', 'tag': {
         'type': 'maps', 'label': 'Marina Tower Center, Puerto Cancún',
-        'url': 'https://maps.app.goo.gl/H2GBiMk6z55NbCSQ9'}},
-    {'file': 'DBDF124B-F458-4DE1-B5E4-5D53F813A0D1.JPG', 'tag': {
-        'type': 'maps', 'label': 'Xplor by Xcaret',
-        'url': 'https://maps.app.goo.gl/qu67vocsbQ7r9vHLA'}},
+        'url': 'https://maps.app.goo.gl/H2GBiMk6z55NbCSQ9',
+        'pos': {'left': 58, 'top': 11, 'width': 37, 'height': 5}}},
+    {'file': 'DBDF124B-F458-4DE1-B5E4-5D53F813A0D1.JPG', 'tag': None},
     {'file': 'D7C971EA-1CB5-4252-A3CD-D83431A870D8.JPG', 'tag': {
         'type': 'maps', 'label': 'Playa de Xpu-Ha',
-        'url': 'https://maps.app.goo.gl/gYmiBgkPqPkvBeMt7'}},
+        'url': 'https://maps.app.goo.gl/gYmiBgkPqPkvBeMt7',
+        'pos': {'left': 3, 'top': 24, 'width': 30, 'height': 7}}},
     {'file': '5F937755-BB0B-434A-A8FC-DABD27EB1668.JPG', 'tag': None},
     {'file': '0E5F81A1-EA04-4ED3-83F8-755A382F76EA.JPG', 'tag': {
         'type': 'mention', 'label': '@puravida.wey',
-        'url': 'https://www.instagram.com/puravida.wey/'}},
+        'url': 'https://www.instagram.com/puravida.wey/',
+        'pos': {'left': 20, 'top': 6, 'width': 38, 'height': 4}}},
     {'file': 'C758011B-6608-477E-B2D0-295D9450640B.JPG', 'tag': None},
 ]
 
@@ -745,7 +757,7 @@ def render_agustin_stories():
   </div>
   <div class="mc-story-media" id="mc-story-media">
     <img id="mc-story-img" src="" alt="">
-    <a id="mc-story-chip" class="mc-story-chip" href="#" target="_blank" rel="noopener noreferrer" hidden></a>
+    <a id="mc-story-hit" class="mc-story-hit" href="#" target="_blank" rel="noopener noreferrer" hidden></a>
   </div>
 </div>'''
 

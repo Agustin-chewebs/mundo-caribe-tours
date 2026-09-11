@@ -1207,7 +1207,7 @@
     var stories = JSON.parse(dataEl.textContent);
     var barsEl = document.getElementById('mc-story-bars');
     var imgEl = document.getElementById('mc-story-img');
-    var chipEl = document.getElementById('mc-story-chip');
+    var hitEl = document.getElementById('mc-story-hit');
     var media = document.getElementById('mc-story-media');
     var closeBtn = document.getElementById('mc-story-close');
     var reduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
@@ -1245,19 +1245,37 @@
       currentAnim.onfinish = function () { goNext(); };
     }
 
-    function updateChip(tag) {
-      if (!tag) { chipEl.hidden = true; return; }
-      var prefix = tag.type === 'maps' ? '📍 ' : '';
-      chipEl.textContent = prefix + tag.label;
-      chipEl.href = tag.url;
-      chipEl.hidden = false;
+    // No visible chip/pill/text of our own — the tap target is an
+    // invisible rectangle laid exactly over that photo's OWN original
+    // sticker (location pin or mention), sized/positioned from `pos`
+    // (percent of the photo itself, measured by hand per photo). A photo
+    // with no confirmed link gets no tap target at all.
+    var currentTag = null;
+    function positionHit() {
+      if (!currentTag) return;
+      var imgRect = imgEl.getBoundingClientRect();
+      var mediaRect = media.getBoundingClientRect();
+      if (imgRect.width === 0 || imgRect.height === 0) return; // not laid out yet
+      var pos = currentTag.pos;
+      hitEl.style.left = (imgRect.left - mediaRect.left + (pos.left / 100) * imgRect.width) + 'px';
+      hitEl.style.top = (imgRect.top - mediaRect.top + (pos.top / 100) * imgRect.height) + 'px';
+      hitEl.style.width = ((pos.width / 100) * imgRect.width) + 'px';
+      hitEl.style.height = ((pos.height / 100) * imgRect.height) + 'px';
+    }
+    function updateHit(tag) {
+      currentTag = (tag && tag.pos) ? tag : null;
+      if (!currentTag) { hitEl.hidden = true; return; }
+      hitEl.href = tag.url;
+      hitEl.setAttribute('aria-label', tag.label);
+      hitEl.hidden = false;
+      positionHit();
     }
 
     function renderIndex() {
       fills.forEach(function (fill, i) { fill.style.width = i < index ? '100%' : '0%'; });
       var s = stories[index];
       imgEl.src = s.src;
-      updateChip(s.tag);
+      updateHit(s.tag);
       stopTimer();
       startTimer();
     }
@@ -1298,7 +1316,7 @@
     var TAP_MAX_MS = 300, MOVE_TOLERANCE = 10, SWIPE_THRESHOLD = 50;
     var pStart = null;
     media.addEventListener('pointerdown', function (e) {
-      if (e.target.closest('.mc-story-chip')) return;
+      if (e.target.closest('.mc-story-hit')) return;
       pStart = { x: e.clientX, y: e.clientY, t: Date.now() };
       pauseTimer();
     });
@@ -1317,6 +1335,13 @@
       resumeTimer();
     });
     media.addEventListener('pointercancel', function () { pStart = null; resumeTimer(); });
+
+    // The image loads asynchronously and the viewport can resize/rotate
+    // while a photo with a tap target is open — both change the photo's
+    // actual rendered box, so the invisible hit area has to be
+    // recomputed against it each time, not just once on render.
+    imgEl.addEventListener('load', positionHit);
+    window.addEventListener('resize', function () { if (!overlay.hidden) positionHit(); });
 
     // Reacting live to a change in the visitor's motion preference (rare,
     // but cheap to handle): stop the running animation and re-render the
