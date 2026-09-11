@@ -1316,14 +1316,28 @@
     var currentTag = null;
     function positionHit() {
       if (!currentTag) return;
-      var imgRect = imgEl.getBoundingClientRect();
+      // The <img> box now always fills the whole media area (see CSS —
+      // it's `position:absolute; inset:0` with `object-fit:contain`),
+      // so it's no longer the same rectangle as the visible picture
+      // when the photo's own aspect ratio doesn't match the screen's.
+      // Work out that inner "letterboxed" picture rect by hand (the
+      // standard object-fit:contain math) before placing the hit area.
       var mediaRect = media.getBoundingClientRect();
-      if (imgRect.width === 0 || imgRect.height === 0) return; // not laid out yet
+      var boxRect = imgEl.getBoundingClientRect(); // == the full media area
+      var nw = imgEl.naturalWidth, nh = imgEl.naturalHeight;
+      if (!nw || !nh || boxRect.width === 0 || boxRect.height === 0) return; // not loaded/laid out yet
+      var boxAspect = boxRect.width / boxRect.height;
+      var picAspect = nw / nh;
+      var picW, picH;
+      if (picAspect > boxAspect) { picW = boxRect.width; picH = picW / picAspect; }
+      else { picH = boxRect.height; picW = picH * picAspect; }
+      var picLeft = (boxRect.left - mediaRect.left) + (boxRect.width - picW) / 2;
+      var picTop = (boxRect.top - mediaRect.top) + (boxRect.height - picH) / 2;
       var pos = currentTag.pos;
-      hitEl.style.left = (imgRect.left - mediaRect.left + (pos.left / 100) * imgRect.width) + 'px';
-      hitEl.style.top = (imgRect.top - mediaRect.top + (pos.top / 100) * imgRect.height) + 'px';
-      hitEl.style.width = ((pos.width / 100) * imgRect.width) + 'px';
-      hitEl.style.height = ((pos.height / 100) * imgRect.height) + 'px';
+      hitEl.style.left = (picLeft + (pos.left / 100) * picW) + 'px';
+      hitEl.style.top = (picTop + (pos.top / 100) * picH) + 'px';
+      hitEl.style.width = ((pos.width / 100) * picW) + 'px';
+      hitEl.style.height = ((pos.height / 100) * picH) + 'px';
     }
     function updateHit(tag) {
       currentTag = (tag && tag.pos) ? tag : null;

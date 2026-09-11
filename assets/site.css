@@ -321,7 +321,16 @@ footer .container { display: flex; justify-content: space-between; flex-wrap: wr
   50% { box-shadow: 0 0 0 6px rgba(63,133,119,0); }
 }
 
-.mc-story-overlay { position: fixed; inset: 0; z-index: 400; background: #0b0b0b; display: flex; align-items: center; justify-content: center; }
+/* Full-viewport, single-story surface. `.mc-story-media` is the ONLY
+   place a photo/video ever paints, and it always fills 100% of the
+   overlay with `overflow: hidden` — there is no flex row, grid, or
+   track anywhere in here that could leave a neighboring story visible
+   beside the active one. The active photo/video is `position: absolute;
+   inset: 0` with `object-fit: contain`, so it always occupies exactly
+   the full media area (letterboxed, never cropped) regardless of its
+   own intrinsic size — nothing shrink-wraps or gets centered by a
+   flex/box calculation that could go wrong across browsers. */
+.mc-story-overlay { position: fixed; inset: 0; width: 100vw; height: 100dvh; z-index: 400; background: #0b0b0b; }
 .mc-story-overlay[hidden] { display: none; }
 .mc-story-bars { position: absolute; top: var(--space-2); left: var(--space-2); right: var(--space-2); display: flex; gap: 4px; z-index: 3; }
 .mc-story-bar { flex: 1; height: 3px; border-radius: 2px; background: rgba(255,255,255,0.3); overflow: hidden; }
@@ -329,8 +338,8 @@ footer .container { display: flex; justify-content: space-between; flex-wrap: wr
 .mc-story-header { position: absolute; top: 30px; left: var(--space-2); right: var(--space-2); display: flex; align-items: center; justify-content: space-between; z-index: 3; }
 .mc-story-header-name { color: #fff; font-weight: 600; font-size: 0.9rem; text-shadow: 0 1px 3px rgba(0,0,0,0.5); }
 .mc-story-close { background: none; border: none; color: #fff; font-size: 1.8rem; line-height: 1; cursor: pointer; padding: 4px 8px; }
-.mc-story-media { position: relative; width: 100%; height: 100%; display: flex; align-items: center; justify-content: center; touch-action: none; }
-.mc-story-media img, .mc-story-media video { max-width: 100%; max-height: 100%; width: auto; height: auto; object-fit: contain; user-select: none; -webkit-user-select: none; }
+.mc-story-media { position: relative; width: 100%; height: 100%; overflow: hidden; touch-action: none; }
+.mc-story-media img, .mc-story-media video { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: contain; user-select: none; -webkit-user-select: none; }
 
 /* Desktop-only prev/next arrows — hidden by default, revealed on hover
    over the photo/video itself (never on touch: `hover: hover` +
