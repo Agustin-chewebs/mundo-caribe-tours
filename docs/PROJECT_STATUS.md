@@ -1,11 +1,11 @@
 # Mundo Caribe Tours — Estado del proyecto
 
-_Última actualización: 2026-09-11, tras corregir el visor de historias para que nunca muestre dos historias a la vez (lado a lado)._
+_Última actualización: 2026-09-11, tras agregar la sección de FAQs en el home._
 
 ## Último commit y estado del deploy
 
-- **Commit:** `217f435` — "Historias: cada foto/video ocupa sola todo el visor (sin overlap)" (rama `main`, subido a GitHub). Anterior: `46f358a` (video sin `loop`, reproduce una sola vez).
-- **Deploy:** `~/Desktop/mundo-caribe-cloudflare-deploy` actualizada y verificada (`assets/site.css` y `assets/site.js` — `index.html` no cambió, este fix fue puramente de CSS/JS), lista para arrastrar a Cloudflare — confirmar en vivo en `https://mundo-caribe-tours.ignacioagustindannunzio.workers.dev/` después de subirla. El deploy a Cloudflare **es manual**: no hay auto-deploy configurado desde GitHub todavía — cada cambio requiere regenerar (`python3 scripts/generate_site.py`), copiar `index.html`, `assets/`, `categoria/`, `tour/`, `todos-los-tours/` y `guias/` a esa carpeta, y arrastrarla a Cloudflare ("New deployment").
+- **Commit:** `a61300d` — "Agrega sección de FAQs en el home (entre Servicios especiales y contacto)" (rama `main`, subido a GitHub). Anterior: `217f435` (historias: sin overlap).
+- **Deploy:** `~/Desktop/mundo-caribe-cloudflare-deploy` actualizada y verificada (`id="faq"`, el JSON-LD `FAQPage` y `initFaq` presentes en el HTML/JS copiados), lista para arrastrar a Cloudflare — confirmar en vivo en `https://mundo-caribe-tours.ignacioagustindannunzio.workers.dev/` después de subirla. El deploy a Cloudflare **es manual**: no hay auto-deploy configurado desde GitHub todavía — cada cambio requiere regenerar (`python3 scripts/generate_site.py`), copiar `index.html`, `assets/`, `categoria/`, `tour/`, `todos-los-tours/` y `guias/` a esa carpeta, y arrastrarla a Cloudflare ("New deployment").
 - Netlify quedó pausado y desconectado de GitHub (decisión tomada por consumo de créditos); ya no es el host activo.
 
 ## Tabla final de disponibilidad (17 tours)
@@ -136,6 +136,17 @@ Sección preparada pero **sin contenido todavía** — a propósito: nada de pos
 4. Copiar los cambios a `~/Desktop/mundo-caribe-cloudflare-deploy` (igual que cualquier otro cambio del sitio, ver arriba) y arrastrar la carpeta a Cloudflare.
 
 No hace falta tocar `render_guide_card`, `render_guides_index` ni `render_guide_page` — ya están listos; sólo se agrega contenido a la lista `GUIDES`.
+
+## FAQs en el home (agregado 2026-09-11)
+
+Sección `id="faq"` entre "Servicios especiales" y "contacto", sin tocar carrito, precios, calendario ni la lógica de envío de la reserva por WhatsApp.
+
+- **Contenido**: 11 preguntas/respuestas en `FAQS` (`scripts/generate_site.py`), texto exacto tal como lo definió Agustín — no se agregó política de cancelación general, clima, horarios de pickup ni reembolsos más allá de lo escrito ahí; el pago con tarjeta queda explícitamente como link de pago (nunca "en el pickup", que es sólo para efectivo/transferencia).
+- **Acordeón accesible** (`initFaq` en `assets/site.js`, sin dependencias nuevas): cada pregunta es un `<button>` real con `aria-expanded`/`aria-controls` dentro de un `<h3>`; la respuesta es un `role="region"` con `aria-labelledby`, oculta con el atributo `hidden` nativo. Teclado: Tab mueve entre preguntas, Enter/Espacio activa (comportamiento nativo de `<button>`); foco visible con el `:focus-visible` global del sitio. Mobile: padding generoso por pregunta y separadores entre cada una.
+- **Encabezado**: eyebrow "Antes de reservar", título "Las dudas que más me preguntan", bajada tal cual pedida.
+- **CTA final discreto** (link de texto, no botón grande): "¿Te quedó una duda? Hablá conmigo por WhatsApp" → abre WhatsApp en pestaña nueva, separado visualmente del CTA prominente de la sección de contacto.
+- **FAQPage (JSON-LD)**: generado desde la misma lista `FAQS` que arma el acordeón visible — no puede haber desacuerdo entre lo mostrado y lo declarado en el schema. No se promete ningún resultado en buscadores en ningún lado.
+- Verificado en local desktop y mobile: acordeón abre/cierra, `aria-expanded` correcto, el resto de páginas (tour/categoría) no cambiaron, y `assets/site.js`/`assets/site.css` sólo tienen líneas agregadas — cero líneas borradas, cero cambios a la lógica de carrito/checkout/calendario/precios.
 
 ## Cambios pendientes
 
