@@ -1,11 +1,11 @@
 # Mundo Caribe Tours — Estado del proyecto
 
-_Última actualización: 2026-09-11, tras sacar el enlace de Xplor (cerrado) y los chips visibles del visor de historias._
+_Última actualización: 2026-09-11, tras cerrar el visor de historias (2do/último foto fijos, video, flechas hover) y dejar la base de "Guías del Caribe"._
 
 ## Último commit y estado del deploy
 
-- **Commit:** `83ecb83` — "Historias: saca el enlace de Xplor (cerrado) y los chips visibles" (rama `main`, subido a GitHub). Anterior: `fe49511` (visor de historias "Conocé a Agustín").
-- **Deploy:** `scripts/generate_site.py` regenerado, `~/Desktop/mundo-caribe-cloudflare-deploy` actualizada y verificada (sin `mc-story-chip` en el HTML/JS, `mc-story-hit` presente, las dos fotos de Xplor con `"tag": null`), lista para arrastrar a Cloudflare — confirmar en vivo en `https://mundo-caribe-tours.ignacioagustindannunzio.workers.dev/` después de subirla. El deploy a Cloudflare **es manual**: no hay auto-deploy configurado desde GitHub todavía — cada cambio requiere regenerar (`python3 scripts/generate_site.py`), copiar `index.html`, `assets/`, `categoria/`, `tour/` y `todos-los-tours/` a esa carpeta, y arrastrarla a Cloudflare ("New deployment").
+- **Commit:** `4ab195a` — "Historias: 2do y último fijos + video + flechas hover; base de Guías" (rama `main`, subido a GitHub). Anterior: `83ecb83` (Xplor sin enlace, chips → áreas transparentes).
+- **Deploy:** `scripts/generate_site.py` regenerado, `~/Desktop/mundo-caribe-cloudflare-deploy` actualizada y verificada (22 archivos en `assets/stories/` incluido el video `.mp4`, sin `.MOV` ni sobrantes; carpeta `guias/` incluida; `index.html` y las páginas de tour/categoría llevan el link "Guías" en el nav), lista para arrastrar a Cloudflare — confirmar en vivo en `https://mundo-caribe-tours.ignacioagustindannunzio.workers.dev/` después de subirla. El deploy a Cloudflare **es manual**: no hay auto-deploy configurado desde GitHub todavía — cada cambio requiere regenerar (`python3 scripts/generate_site.py`), copiar `index.html`, `assets/`, `categoria/`, `tour/`, `todos-los-tours/` y `guias/` a esa carpeta, y arrastrarla a Cloudflare ("New deployment").
 - Netlify quedó pausado y desconectado de GitHub (decisión tomada por consumo de créditos); ya no es el host activo.
 
 ## Tabla final de disponibilidad (17 tours)
@@ -88,25 +88,61 @@ Mejora puntual de copy/UX, sin pasarela de pago ni cambios de precio — la web 
 - No se agregaron horarios, puntos de salida, políticas, idiomas, zonas de pickup ni condiciones de cancelación — quedan fuera hasta que Agustín los confirme.
 - Probado en local: nota correcta para cada método de pago (tarjeta, efectivo, transferencia) en el formulario y en la revisión, CTA y bloque "Qué sigue" visibles en desktop y mobile, y la descripción de Akumal + Cenote Nohoch sin la mención de sargazo.
 
-## Visor de historias "Conocé a Agustín" (agregado 2026-09-11)
+## Visor de historias "Conocé a Agustín" (última revisión 2026-09-11)
 
-- **Entrada**: anillo circular (foto + "Conocé a Agustín") en el home, entre el hero y "¿Qué querés vivir?". Al tocarlo abre el visor de pantalla completa.
-- **19 fotos reales de Agustín**, en `assets/stories/` (nombres de archivo originales, sin editar, recortar ni sacar stickers — orientación y formato vertical original respetados tal cual las subió; algunas quedan "de costado" porque así están guardadas originalmente, a propósito no corregidas). Orden curado a mano en `AGUSTIN_STORIES` (`scripts/generate_site.py`):
-  1. Fija primera: "Un Agustín de 21 años empezando a encontrarse" (`73DB1620...`).
-  2. Después alterna con criterio — paisaje/lugar real → Agustín viviendo la experiencia → aventura/tour → momento humano — sin repetir el mismo tipo dos veces seguidas.
-  3. Las fotos de fiesta (michelada, yate) quedan deliberadamente más avanzadas en la secuencia (posiciones 11 y 14 de 19), nunca al comienzo ni sobre el cierre.
-- **Enlaces sin chip visible** (agregado/corregido 2026-09-11): ya no hay ningún chip, pill ni texto dibujado encima de la foto. Sólo 5 fotos tienen un enlace confirmado por Agustín, y en cada una es un área **transparente** (`#mc-story-hit`) posicionada a mano (`pos`: left/top/width/height en % de la foto, en `AGUSTIN_STORIES`) exactamente sobre el sticker original de esa foto — abre en pestaña nueva (`target="_blank" rel="noopener noreferrer"`): Playa de Xpu-Ha, ATIK World Tulum, Marina Tower Center, Sian Ka'an y @puravida.wey. La posición se recalcula en JS contra el tamaño real de la foto en pantalla (al cargar la imagen y al cambiar el tamaño de la ventana), así que se mantiene alineada en cualquier pantalla.
-- **Xplor by Xcaret (agregado 2026-09-11): sin enlace.** Ese parque cerró — sus dos fotos (la de XVAGE colgado y la de la tirolesa) quedan tal cual, con su logo/branding original en la imagen, pero sin chip, sin etiqueta y sin ningún enlace.
-- **Comportamiento del visor** (`initAgustinStories` en `assets/site.js`, sin librerías externas): una barra de progreso por foto, autoplay de 5s por foto, tap izquierda/derecha (o clic) y swipe para navegar, mantener presionado pausa y soltar reanuda (misma distinción "arrastre vs. tap" que ya usa el carrusel de tours), teclado (flechas + Escape), y respeta `prefers-reduced-motion`: sin autoplay ni barra animada, sólo navegación manual.
+- **Entrada**: anillo circular (foto + "Conocé a Agustín") en el home, debajo del hero (justo después de "Coordinado directo con Agustín por WhatsApp") y antes de "¿Qué querés vivir?". Aro con gradiente propio verde profundo → arena (`--teal-deep` → `--sand`, nada de Instagram). Al tocarlo abre el visor de pantalla completa.
+- **22 historias reales de Agustín** (19 fotos + 2 fotos nuevas + 1 video), en `assets/stories/` — nada editado, recortado, sin stickers ni corrección de orientación; algunas quedan "de costado" porque así están guardadas originalmente, a propósito no corregidas. Orden curado a mano en `AGUSTIN_STORIES` (`scripts/generate_site.py`):
+  1. **Fija primera**: "Un Agustín de 21 años empezando a encontrarse" (`73DB1620...`).
+  2. **Fija segunda**: atardecer en Holbox (`85052D02...`) — completamente limpia, sin texto/ubicación/chip/enlace.
+  3. El resto alterna con criterio — paisaje/lugar real → Agustín viviendo la experiencia → aventura/tour → momento humano — sin repetir el mismo tipo dos veces seguidas.
+  4. El **video** (`F8E4E379...`, cámara navideña en Playa del Carmen) va avanzado, en el empalme entre una foto de aventura y una de momento personal — nunca al comienzo ni al cierre.
+  5. Fotos de fiesta (michelada, yate) deliberadamente avanzadas, nunca al inicio ni sobre el cierre.
+  6. **Fija última**: Agustín con su mamá, hermano y ahijado (`74F7FEFD...`) — sin nombres, ubicación ni enlaces; `alt="Agustín junto a su familia durante un viaje"`.
+- **El video**: el archivo original (`F8E4E379-....MOV`, HEVC) no es reproducible de forma confiable en todos los navegadores/dispositivos, así que se convirtió **una sola vez** a `.mp4` (H.264, mismo aspecto vertical 9:16, `avconvert --preset Preset960x540`, ~2.1MB para 5s) — mismo contenido, sólo cambia el códec/contenedor. El `.MOV` original no se sube al sitio (queda solo en `~/Downloads/Fotos Agustin para MundoCaribe/` en la máquina de Agustín). Reproduce con `autoplay`, `muted`, `playsinline` y `loop`; la barra de progreso de esa historia dura exactamente lo mismo que el video (se lee `video.duration` real al cargar los metadatos, no un valor fijo), y al terminar avanza sola a la siguiente historia igual que una foto.
+- **Enlaces sin chip visible**: no hay ningún chip, pill ni texto agregado encima de ninguna foto. Sólo 5 fotos tienen un enlace confirmado por Agustín, y en cada una es un área **transparente** (`#mc-story-hit`) posicionada a mano (`pos`: left/top/width/height en % de la foto, en `AGUSTIN_STORIES`) exactamente sobre el sticker original de esa foto — abre en pestaña nueva (`target="_blank" rel="noopener noreferrer"`): Playa de Xpu-Ha, ATIK World Tulum, Marina Tower Center, Sian Ka'an y @puravida.wey. La posición se recalcula en JS contra el tamaño real de la foto en pantalla (al cargar la imagen y al cambiar el tamaño de la ventana). Las demás 17 historias no tienen ninguna acción — no se inventó ningún enlace.
+- **Xplor by Xcaret / Xavage: sin enlace.** Ese parque cerró — sus dos fotos quedan tal cual, con su logo/branding original en la imagen, pero sin chip, sin etiqueta y sin ningún enlace.
+- **Comportamiento del visor** (`initAgustinStories` en `assets/site.js`, sin librerías externas, sin React/Tailwind/Framer Motion — sólo se tomó como referencia de interacción un story-viewer externo, nunca su código ni su marca): una barra de progreso por historia, autoplay (5s por foto; la duración real del video en la suya), tap izquierda/derecha (o clic) y swipe para navegar, mantener presionado pausa (pausa también el video) y soltar reanuda, **flechas ‹ › de escritorio que sólo aparecen al pasar el mouse** (`hover: hover` + `pointer: fine` — nunca en touch), botón de cerrar siempre visible, teclado (flechas + Escape), y respeta `prefers-reduced-motion`: sin autoplay ni barra animada — el video igual reproduce (es el contenido que el visitante abrió a propósito) pero no avanza solo. Sin likes, comentarios, avatares múltiples, timestamps, CTAs ni ningún elemento de red social.
 - No se tocó ningún precio, tour, disponibilidad ni lógica de checkout existente — cambio aislado al home.
-- Probado en local en desktop y mobile: orden de las 19 fotos, autoplay, pausa/reanudación por mantener presionado, tap y swipe en ambas direcciones, cierre al pasar la última foto, tecla Escape; las 5 áreas transparentes verificadas una por una (superpuestas visualmente contra cada sticker real para confirmar alineación, no sólo por coordenadas) y las dos fotos de Xplor confirmadas sin ningún enlace.
+- Probado en local en desktop y mobile: orden de las 22 historias, autoplay foto y video, duración de la barra del video verificada contra `video.duration` real, auto-avance al terminar el video, pausa/reanudación por mantener presionado, tap y swipe en ambas direcciones, flechas de escritorio (aparecen sólo con el mouse encima, ausentes en mobile), cierre al pasar la última foto, tecla Escape, alt de la foto familiar, y las 5 áreas transparentes + las 2 fotos de Xplor re-verificadas en sus nuevas posiciones.
+
+## "Guías del Caribe" — base del blog (agregado 2026-09-11)
+
+Sección preparada pero **sin contenido todavía** — a propósito: nada de posts de relleno ni tarjetas de ejemplo.
+
+- **Nav**: link discreto "Guías" en el menú de escritorio y mobile, entre "Tours" y "Contacto" (no desplaza Tours, WhatsApp ni el carrito).
+- **Ruta índice**: `/guias/` (`render_guides_index()` en `scripts/generate_site.py`) — con `GUIDES` vacía muestra el estado vacío intencional: "Próximamente: guías reales para elegir mejor tu experiencia en Riviera Maya." dentro de un marco punteado (se ve preparado, no roto).
+- **Estructura lista para el primer artículo real** — nada de esto está conectado a un CMS, IA, automatización, feed ni analítica; es sólo la estructura de datos + la función que ya sabe renderizar una página cuando haya contenido real.
+
+### Cómo publicar la primera guía real
+
+1. Elegir las fotos de la guía y copiarlas a `assets/guias/` (crear la carpeta si no existe todavía — hoy no existe porque no hay ninguna guía).
+2. Abrir `scripts/generate_site.py`, buscar `GUIDES = []` y agregar un diccionario por artículo, con esta forma exacta:
+   ```python
+   GUIDES = [
+       {
+           'title': 'Título del artículo',
+           'slug': 'titulo-del-articulo',            # define la URL: /guias/titulo-del-articulo/
+           'date': '2026-09-15',                      # fecha de publicación
+           'description': 'Resumen corto (1-2 líneas) para la tarjeta y el SEO.',
+           'category': 'Cenotes',                      # etiqueta libre mostrada en la tarjeta
+           'image': 'nombre-de-la-foto.jpg',           # debe existir en assets/guias/
+           'content_html': '<p>Cuerpo del artículo en HTML...</p>',
+           # 'seo': {'title': '...', 'description': '...'},  # opcional, si querés un título/descripción distinto para buscadores
+       },
+   ]
+   ```
+3. Correr `python3 scripts/generate_site.py` — genera automáticamente `/guias/` (ahora con la tarjeta del artículo) y `/guias/<slug>/index.html` con el artículo completo.
+4. Copiar los cambios a `~/Desktop/mundo-caribe-cloudflare-deploy` (igual que cualquier otro cambio del sitio, ver arriba) y arrastrar la carpeta a Cloudflare.
+
+No hace falta tocar `render_guide_card`, `render_guides_index` ni `render_guide_page` — ya están listos; sólo se agrega contenido a la lista `GUIDES`.
 
 ## Cambios pendientes
 
 - **Confirmar disponibilidad real** de `tulum-casa-tortuga` (hoy `on_request` por falta de dato, no por decisión definitiva).
 - **Auto-deploy a Cloudflare**: sigue sin configurarse: cada cambio requiere el paso manual de arrastrar la carpeta.
+- **Guías del Caribe**: sigue sin ningún artículo publicado — a la espera de contenido real de Agustín (ver instrucciones de publicación arriba).
 - Nada de precios ni lógica de cálculo se tocó en esta fase — siguen como quedaron en las fases anteriores.
 
 ## Próximo objetivo
 
-Sin definir todavía — el checkout final (datos del huésped una sola vez y sólo en el carrito, fecha/pasajeros por tour, editar ítems, paso de revisión) y el visor "Conocé a Agustín" ya están construidos y probados. Próximo paso sugerido: que Agustín lo pruebe en la URL real de Cloudflare y traiga feedback, o defina la siguiente prioridad (ej. confirmar los tours `on_request` pendientes, configurar auto-deploy, u otra mejora).
+Sin definir todavía — el checkout final, el visor "Conocé a Agustín" (con video y las dos fotos fijas) y la base de "Guías del Caribe" ya están construidos y probados. Próximo paso sugerido: que Agustín lo pruebe en la URL real de Cloudflare y traiga feedback, escriba la primera guía real (ver instrucciones de publicación arriba), o defina la siguiente prioridad (ej. confirmar los tours `on_request` pendientes, configurar auto-deploy, u otra mejora).
