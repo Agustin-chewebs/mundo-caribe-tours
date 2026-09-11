@@ -1236,14 +1236,18 @@
     }
     // durationMs: fixed for photos, but a video's bar has to last exactly
     // as long as the video itself — the caller passes the real duration
-    // once it's known (the video's metadata), not before.
-    function startTimer(durationMs) {
+    // once it's known (the video's metadata), not before. autoAdvance is
+    // false for video: the bar there is purely visual, driven by the
+    // SAME duration as the video, but what actually triggers "next" is
+    // the video's own `ended` event (see onVideoEnded) — never both, or
+    // a late/duplicate advance could skip a story.
+    function startTimer(durationMs, autoAdvance) {
       var fill = fills[index];
       if (reduceMotion) {
         // No auto-advance, no animated motion — just mark progress
         // statically so the viewer still shows where you are. A video
-        // still plays (it's the content the visitor opened), it just
-        // won't auto-advance to the next story on its own.
+        // still plays once (it's the content the visitor opened), it
+        // just won't auto-advance to the next story on its own.
         fill.style.width = '100%';
         return;
       }
@@ -1252,7 +1256,56 @@
         [{ width: '0%' }, { width: '100%' }],
         { duration: durationMs, easing: 'linear', fill: 'forwards' }
       );
-      currentAnim.onfinish = function () { goNext(); };
+      if (autoAdvance !== false) currentAnim.onfinish = function () { goNext(); };
+    }
+
+    // ---- video stories: a single source of truth for "move on" ----
+    // `currentVideoStory` identifies which story object the video
+    // element's listeners currently belong to. Combined with actually
+    // removing those listeners in clearVideoHandlers() (called before
+    // every render and on close), a handler left over from a story the
+    // visitor has already navigated away from can never fire again —
+    // and even if one somehow did, this guard makes it a no-op.
+    var currentVideoStory = null;
+    var videoFallbackTimer = null;
+
+    function clearVideoHandlers() {
+      videoEl.removeEventListener('loadedmetadata', onVideoReady);
+      videoEl.removeEventListener('ended', onVideoEnded);
+      videoEl.removeEventListener('error', onVideoError);
+      videoEl.removeEventListener('stalled', onVideoError);
+      if (videoFallbackTimer) { clearTimeout(videoFallbackTimer); videoFallbackTimer = null; }
+    }
+    function stopVideo() {
+      clearVideoHandlers();
+      currentVideoStory = null;
+      videoEl.pause();
+    }
+    function onVideoReady() {
+      if (stories[index] !== currentVideoStory) return; // stale — visitor already moved on
+      var d = videoEl.duration;
+      startTimer((isFinite(d) && d > 0 ? d : 5) * 1000, false);
+    }
+    function onVideoEnded() {
+      if (stories[index] !== currentVideoStory) return;
+      // Same rule as photos under reduced motion: nothing advances on
+      // its own, the video just stays on its last frame until the
+      // visitor taps/swipes manually.
+      if (reduceMotion) return;
+      goNext();
+    }
+    function onVideoError() {
+      if (stories[index] !== currentVideoStory) return;
+      // Couldn't load or play this video — never strand the viewer on a
+      // stuck/looping frame: mark this story "done" and move on shortly,
+      // same as it would if it had actually finished playing.
+      var failed = currentVideoStory;
+      clearVideoHandlers();
+      currentVideoStory = null;
+      if (fills[index]) fills[index].style.width = '100%';
+      videoFallbackTimer = setTimeout(function () {
+        if (stories[index] === failed) goNext();
+      }, 2000);
     }
 
     // No visible chip/pill/text of our own — the tap target is an
@@ -1284,24 +1337,35 @@
     function renderIndex() {
       fills.forEach(function (fill, i) { fill.style.width = i < index ? '100%' : '0%'; });
       stopTimer();
-      videoEl.pause();
+      stopVideo(); // detach the previous video story's listeners/timers before anything else
       var s = stories[index];
       if (s.type === 'video') {
         imgEl.hidden = true;
         videoEl.hidden = false;
         videoEl.setAttribute('aria-label', s.alt || '');
-        if (videoEl.currentSrc !== s.src) videoEl.src = s.src;
+        currentVideoStory = s;
+        videoEl.addEventListener('ended', onVideoEnded);
+        videoEl.addEventListener('error', onVideoError);
+        videoEl.addEventListener('stalled', onVideoError);
+        // Reinitialize fully from 0 every time this story is entered —
+        // re-assigning .src and calling .load() forces a real reset
+        // instead of possibly resuming wherever a previous play left off.
+        videoEl.src = s.src;
+        videoEl.load();
         videoEl.currentTime = 0;
         // The bar has to run exactly as long as the video — wait for its
         // real duration (metadata) before starting it, instead of
         // guessing with the photos' fixed duration.
-        var onReady = function () {
-          videoEl.removeEventListener('loadedmetadata', onReady);
-          if (stories[index] === s) startTimer((videoEl.duration || 5) * 1000);
-        };
-        if (videoEl.readyState >= 1 && videoEl.duration) onReady();
-        else videoEl.addEventListener('loadedmetadata', onReady);
-        videoEl.play().catch(function () {});
+        if (videoEl.readyState >= 1 && isFinite(videoEl.duration) && videoEl.duration > 0) onVideoReady();
+        else videoEl.addEventListener('loadedmetadata', onVideoReady);
+        // Safety net: if the video never fires 'loadedmetadata'/'ended'/
+        // 'error' at all (silent network hang, odd device quirk), don't
+        // strand the viewer indefinitely — move on after a few seconds.
+        videoFallbackTimer = setTimeout(function () {
+          if (stories[index] === s) { clearVideoHandlers(); currentVideoStory = null; goNext(); }
+        }, 8000);
+        var playPromise = videoEl.play();
+        if (playPromise && playPromise.catch) playPromise.catch(onVideoError);
       } else {
         videoEl.hidden = true;
         imgEl.hidden = false;
@@ -1328,7 +1392,7 @@
     }
     function closeViewer() {
       stopTimer();
-      videoEl.pause();
+      stopVideo();
       overlay.hidden = true;
       document.body.style.overflow = '';
     }
@@ -1385,7 +1449,12 @@
       reduceMotion = e.matches;
       if (!overlay.hidden) {
         stopTimer();
-        startTimer(stories[index].type === 'video' ? (videoEl.duration || 5) * 1000 : STORY_DURATION_MS);
+        if (stories[index].type === 'video') {
+          var d = videoEl.duration;
+          startTimer((isFinite(d) && d > 0 ? d : 5) * 1000, false);
+        } else {
+          startTimer(STORY_DURATION_MS);
+        }
       }
     });
   }
