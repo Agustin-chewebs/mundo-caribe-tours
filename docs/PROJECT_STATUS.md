@@ -1,11 +1,11 @@
 # Mundo Caribe Tours — Estado del proyecto
 
-_Última actualización: 2026-09-10, al cierre de la Fase 3 (disponibilidad y calendario)._
+_Última actualización: 2026-09-10, tras el checkout final (editar ítem del carrito + paso de revisión)._
 
 ## Último commit y estado del deploy
 
-- **Commit:** `fe730ca` — "Fase 3: calendario de disponibilidad propio, accesible, y checkout con fecha por tour" (rama `main`, subido a GitHub).
-- **Deploy:** confirmado en vivo en `https://mundo-caribe-tours.ignacioagustindannunzio.workers.dev/` — verificado que el `site.js` publicado tiene `CART_VERSION = 4` y que `chichen-itza` sirve `"schedule": {"type": "daily"}`, coincidiendo con el repo. El deploy a Cloudflare **es manual**: no hay auto-deploy configurado desde GitHub todavía — cada cambio requiere regenerar (`python3 scripts/generate_site.py`), copiar `index.html`, `assets/`, `categoria/`, `tour/` y `todos-los-tours/` a la carpeta `~/Desktop/mundo-caribe-cloudflare-deploy`, y arrastrarla a Cloudflare ("New deployment").
+- **Commit:** `80dcce0` — "Checkout final: editar un tour del carrito + paso de revisión antes de enviar" (rama `main`, subido a GitHub).
+- **Deploy:** carpeta `~/Desktop/mundo-caribe-cloudflare-deploy` regenerada y verificada (`CART_VERSION = 5`), lista para arrastrar a Cloudflare — confirmar en vivo en `https://mundo-caribe-tours.ignacioagustindannunzio.workers.dev/` después de subirla. El deploy a Cloudflare **es manual**: no hay auto-deploy configurado desde GitHub todavía — cada cambio requiere regenerar (`python3 scripts/generate_site.py`), copiar `index.html`, `assets/`, `categoria/`, `tour/` y `todos-los-tours/` a esa carpeta, y arrastrarla a Cloudflare ("New deployment").
 - Netlify quedó pausado y desconectado de GitHub (decisión tomada por consumo de créditos); ya no es el host activo.
 
 ## Tabla final de disponibilidad (17 tours)
@@ -59,13 +59,18 @@ Reglas por tipo:
 - `on_request`: cualquier fecha futura, siempre marcada tentativa.
 - En todos los casos: las fechas pasadas (según "hoy" en Cancún) quedan bloqueadas.
 
+## Checkout final (agregado 2026-09-10)
+
+- **Editar un tour ya agregado**: cada ítem del carrito tiene un `id` propio; el botón "Editar" navega a la página de ese tour, la precarga con la fecha/pasajeros/opción guardados (banner "Estás editando este tour en tu carrito", con link para cancelar sin guardar), y al confirmar reemplaza el ítem en el carrito en vez de duplicarlo. `CART_VERSION` 4→5.
+- **Paso de revisión antes de enviar**: "Revisar y reservar" valida todo (nombre, hotel, habitación, método de pago, fecha de cada tour) y muestra un resumen de solo lectura — cada tour con su fecha/pax/precio, total, y los datos del huésped — antes de "Confirmar y enviar por WhatsApp" (que vuelve a validar una vez más). "Volver a editar" regresa al formulario sin perder nada.
+- Probado de punta a punta en local: agregar, editar sin duplicar, cancelar edición sin guardar, entrar a revisión, volver a editar, y el mensaje final de WhatsApp con el formato esperado.
+
 ## Cambios pendientes
 
 - **Confirmar disponibilidad real** de `tulum-casa-tortuga` y `akumal-cenote-nohoch` (hoy `on_request` por falta de dato, no por decisión definitiva).
 - **Auto-deploy a Cloudflare**: sigue sin configurarse: cada cambio requiere el paso manual de arrastrar la carpeta.
-- **Checkout final**: no iniciado (ver próximo objetivo).
-- Nada de precios, lógica de cálculo, carrito ni métodos de pago se tocó en esta fase — siguen como quedaron en las fases anteriores.
+- Nada de precios ni lógica de cálculo se tocó en esta fase — siguen como quedaron en las fases anteriores.
 
 ## Próximo objetivo
 
-Checkout final: pedir los datos del huésped **una sola vez** para toda la reserva (nombre completo, hotel, número de habitación, método de pago — el nombre ya se agregó en esta fase; hotel/habitación/pago ya se pedían una sola vez desde antes), manteniendo la **fecha y los pasajeros de cada tour por separado** (nunca sumados ni compartidos entre tours), y un mensaje final de WhatsApp que resuma todo con claridad, sin prometer disponibilidad automática ni cobrar nada.
+Sin definir todavía — el checkout final (datos del huésped una sola vez, fecha/pasajeros por tour, editar ítems, paso de revisión) ya está construido y probado. Próximo paso sugerido: que Agustín lo pruebe en la URL real de Cloudflare y traiga feedback, o defina la siguiente prioridad (ej. confirmar los tours `on_request` pendientes, configurar auto-deploy, u otra mejora).
