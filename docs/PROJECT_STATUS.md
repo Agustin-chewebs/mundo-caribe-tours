@@ -1,11 +1,11 @@
 # Mundo Caribe Tours — Estado del proyecto
 
-_Última actualización: 2026-09-11, tras agregar el visor de historias "Conocé a Agustín" en el home._
+_Última actualización: 2026-09-11, tras sacar el enlace de Xplor (cerrado) y los chips visibles del visor de historias._
 
 ## Último commit y estado del deploy
 
-- **Commit:** `fe49511` — "Agrega el visor de historias 'Conocé a Agustín' en el home" (rama `main`, subido a GitHub). Anterior: `8bb4b36` (copy/UX del checkout).
-- **Deploy:** `scripts/generate_site.py` regenerado, `~/Desktop/mundo-caribe-cloudflare-deploy` actualizada y verificada (19 fotos en `assets/stories/`, `agustin-stories-data` e `initAgustinStories` presentes), lista para arrastrar a Cloudflare — confirmar en vivo en `https://mundo-caribe-tours.ignacioagustindannunzio.workers.dev/` después de subirla. El deploy a Cloudflare **es manual**: no hay auto-deploy configurado desde GitHub todavía — cada cambio requiere regenerar (`python3 scripts/generate_site.py`), copiar `index.html`, `assets/`, `categoria/`, `tour/` y `todos-los-tours/` a esa carpeta, y arrastrarla a Cloudflare ("New deployment").
+- **Commit:** `83ecb83` — "Historias: saca el enlace de Xplor (cerrado) y los chips visibles" (rama `main`, subido a GitHub). Anterior: `fe49511` (visor de historias "Conocé a Agustín").
+- **Deploy:** `scripts/generate_site.py` regenerado, `~/Desktop/mundo-caribe-cloudflare-deploy` actualizada y verificada (sin `mc-story-chip` en el HTML/JS, `mc-story-hit` presente, las dos fotos de Xplor con `"tag": null`), lista para arrastrar a Cloudflare — confirmar en vivo en `https://mundo-caribe-tours.ignacioagustindannunzio.workers.dev/` después de subirla. El deploy a Cloudflare **es manual**: no hay auto-deploy configurado desde GitHub todavía — cada cambio requiere regenerar (`python3 scripts/generate_site.py`), copiar `index.html`, `assets/`, `categoria/`, `tour/` y `todos-los-tours/` a esa carpeta, y arrastrarla a Cloudflare ("New deployment").
 - Netlify quedó pausado y desconectado de GitHub (decisión tomada por consumo de créditos); ya no es el host activo.
 
 ## Tabla final de disponibilidad (17 tours)
@@ -95,10 +95,11 @@ Mejora puntual de copy/UX, sin pasarela de pago ni cambios de precio — la web 
   1. Fija primera: "Un Agustín de 21 años empezando a encontrarse" (`73DB1620...`).
   2. Después alterna con criterio — paisaje/lugar real → Agustín viviendo la experiencia → aventura/tour → momento humano — sin repetir el mismo tipo dos veces seguidas.
   3. Las fotos de fiesta (michelada, yate) quedan deliberadamente más avanzadas en la secuencia (posiciones 11 y 14 de 19), nunca al comienzo ni sobre el cierre.
-- **Chip discreto** (📍 ubicación o @mención, sin logo/ícono de Instagram) sólo en las 7 fotos con enlace confirmado por Agustín, abre en pestaña nueva (`target="_blank" rel="noopener noreferrer"`): Playa de Xpu-Ha, ATIK World Tulum, Marina Tower Center, Sian Ka'an, Xplor by Xcaret (x2) y @puravida.wey. Las demás 12 fotos no tienen ninguna acción — no se inventó ningún enlace.
+- **Enlaces sin chip visible** (agregado/corregido 2026-09-11): ya no hay ningún chip, pill ni texto dibujado encima de la foto. Sólo 5 fotos tienen un enlace confirmado por Agustín, y en cada una es un área **transparente** (`#mc-story-hit`) posicionada a mano (`pos`: left/top/width/height en % de la foto, en `AGUSTIN_STORIES`) exactamente sobre el sticker original de esa foto — abre en pestaña nueva (`target="_blank" rel="noopener noreferrer"`): Playa de Xpu-Ha, ATIK World Tulum, Marina Tower Center, Sian Ka'an y @puravida.wey. La posición se recalcula en JS contra el tamaño real de la foto en pantalla (al cargar la imagen y al cambiar el tamaño de la ventana), así que se mantiene alineada en cualquier pantalla.
+- **Xplor by Xcaret (agregado 2026-09-11): sin enlace.** Ese parque cerró — sus dos fotos (la de XVAGE colgado y la de la tirolesa) quedan tal cual, con su logo/branding original en la imagen, pero sin chip, sin etiqueta y sin ningún enlace.
 - **Comportamiento del visor** (`initAgustinStories` en `assets/site.js`, sin librerías externas): una barra de progreso por foto, autoplay de 5s por foto, tap izquierda/derecha (o clic) y swipe para navegar, mantener presionado pausa y soltar reanuda (misma distinción "arrastre vs. tap" que ya usa el carrusel de tours), teclado (flechas + Escape), y respeta `prefers-reduced-motion`: sin autoplay ni barra animada, sólo navegación manual.
 - No se tocó ningún precio, tour, disponibilidad ni lógica de checkout existente — cambio aislado al home.
-- Probado en local en desktop y mobile: orden de las 19 fotos, autoplay, pausa/reanudación por mantener presionado, tap y swipe en ambas direcciones, cierre al pasar la última foto, tecla Escape, y los 7 chips (label + URL correctos).
+- Probado en local en desktop y mobile: orden de las 19 fotos, autoplay, pausa/reanudación por mantener presionado, tap y swipe en ambas direcciones, cierre al pasar la última foto, tecla Escape; las 5 áreas transparentes verificadas una por una (superpuestas visualmente contra cada sticker real para confirmar alineación, no sólo por coordenadas) y las dos fotos de Xplor confirmadas sin ningún enlace.
 
 ## Cambios pendientes
 
