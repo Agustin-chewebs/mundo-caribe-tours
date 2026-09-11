@@ -375,6 +375,60 @@ CATEGORY_TAG = {
     'aventura': 'Aventura y cenotes',
 }
 
+# Home FAQ section (added 2026-09-11), between "Servicios especiales" and
+# contacto. Single source of truth for both the visible accordion and the
+# FAQPage structured data — the JSON-LD is built from this same list, so
+# it can never drift from what's actually shown on the page. Wording is
+# exactly what Agustín gave; nothing here is guessed or extrapolated
+# (no cancellation policy beyond the no-show clause, no pickup times, no
+# weather policy, no card-at-pickup, no invented kid/quota rules).
+FAQS = [
+    {
+        'q': '¿Hasta cuándo puedo reservar o cambiar la fecha?',
+        'a': 'Las reservas y cambios de fecha se hacen hasta las 20:00 del día anterior, hora local de Playa del Carmen. Así podemos coordinar transporte, cupos y operación sin improvisar.',
+    },
+    {
+        'q': '¿La reserva queda confirmada automáticamente?',
+        'a': 'No. La web organiza tu solicitud y Agustín confirma disponibilidad por WhatsApp. Una reserva queda confirmada cuando se completa el método de pago que hayan coordinado.',
+    },
+    {
+        'q': '¿Cómo sé qué días opera cada tour?',
+        'a': 'En cada ficha vas a ver los días operativos y el calendario sólo deja elegir fechas disponibles para ese tour. Si aparece "Consultá disponibilidad", elegís una fecha tentativa y Agustín la confirma directamente por WhatsApp.',
+    },
+    {
+        'q': '¿Qué pasa si no me presento o quiero reprogramar el mismo día?',
+        'a': 'Un no-show o una reprogramación el mismo día requiere un adelanto de $250 MXN por persona para volver a coordinar la operación. Ese importe se descuenta del total del tour cuando se realiza. Si después de pagarlo la reserva se vuelve a cancelar, no hay devolución.',
+    },
+    {
+        'q': '¿Cómo puedo pagar?',
+        'a': 'Con tarjeta coordinamos un link de pago. También podés pagar en efectivo USD o MXN al momento del pickup, justo antes de hacer el tour. Si preferís transferencia, se paga el valor completo del tour y la reserva se confirma una vez acreditado el depósito.',
+    },
+    {
+        'q': '¿La web me cobra al hacer la reserva?',
+        'a': 'No. La web no procesa un pago automático. Primero mandás la solicitud y coordinás el pago con Agustín por WhatsApp según el método que elijas.',
+    },
+    {
+        'q': '¿Puedo reservar más de un tour en el mismo viaje?',
+        'a': 'Sí. Podés agregar varios tours, elegir una fecha para cada uno y enviar una sola solicitud. Tus datos de contacto se completan una vez y después revisamos juntos que el itinerario tenga sentido.',
+    },
+    {
+        'q': '¿Qué datos necesito para reservar?',
+        'a': 'Nombre de quien reserva, hotel, número de habitación, cantidad de adultos, niños e infantes, y método de pago. Los infantes no pagan, pero sí los contamos para organizar la transportación.',
+    },
+    {
+        'q': '¿El traslado a Cozumel está incluido?',
+        'a': 'La transportación de Cozumel está incluida a partir de 4 personas. Si son 2 o 3 personas, escribime antes: buscamos una alternativa y ajustamos el precio por el inconveniente.',
+    },
+    {
+        'q': '¿Viajan en grupo grande?',
+        'a': 'Para grupos de 10 personas o más, escribime desde la sección de contacto o por WhatsApp. Te armamos un presupuesto especial según la cantidad de pasajeros, fechas y plan que buscan.',
+    },
+    {
+        'q': 'Todavía no tengo fechas cerradas, ¿igual puedo consultar?',
+        'a': 'Sí. Si tu viaje es de acá a uno o tres meses, dejá tus datos en el formulario de contacto o escribí por WhatsApp. Podemos empezar a armarlo con tiempo y sin apuro.',
+    },
+]
+
 # "Conocé a Agustín" story viewer (home). Photos are Agustín's own,
 # untouched (no crop, no edit, stickers left as-is) — order is curated by
 # hand, not random:
@@ -787,6 +841,64 @@ def render_agustin_stories():
 
 
 # ---------------------------------------------------------------------------
+# FAQ (home, between "Servicios especiales" and contacto)
+# ---------------------------------------------------------------------------
+
+def render_faq_section():
+    """Accessible accordion — real <button>s with aria-expanded, native
+    keyboard support (Tab/Enter/Space need nothing extra since these are
+    real buttons), toggled open/closed in assets/site.js. FAQPage JSON-LD
+    is generated from the exact same FAQS list as the visible markup, so
+    the structured data can never say something the page doesn't."""
+    items_html = ''
+    for i, item in enumerate(FAQS):
+        q_id = f'faq-q-{i}'
+        a_id = f'faq-a-{i}'
+        items_html += f'''<div class="faq-item">
+        <h3 class="faq-question">
+          <button type="button" class="faq-trigger" id="{q_id}" aria-expanded="false" aria-controls="{a_id}">
+            <span>{item['q']}</span>
+            <span class="faq-icon" aria-hidden="true"></span>
+          </button>
+        </h3>
+        <div class="faq-answer" id="{a_id}" role="region" aria-labelledby="{q_id}" hidden>
+          <p>{item['a']}</p>
+        </div>
+      </div>'''
+
+    faq_jsonld = json.dumps({
+        '@context': 'https://schema.org',
+        '@type': 'FAQPage',
+        'mainEntity': [
+            {
+                '@type': 'Question',
+                'name': item['q'],
+                'acceptedAnswer': {'@type': 'Answer', 'text': item['a']},
+            }
+            for item in FAQS
+        ],
+    }, ensure_ascii=False)
+
+    wa_text = 'Hola, tengo una duda antes de reservar.'
+    return f'''<section id="faq" class="reveal">
+  <div class="container">
+    <div class="section-head">
+      <p class="eyebrow">Antes de reservar</p>
+      <h2>Las dudas que más me preguntan</h2>
+      <p>Si algo no está claro, escribime. Prefiero ayudarte a elegir bien antes que venderte cualquier cosa.</p>
+    </div>
+    <div class="faq-list">
+      {items_html}
+    </div>
+    <p class="faq-cta">
+      <a href="{wa_link(wa_text)}" target="_blank" rel="noopener">¿Te quedó una duda? Hablá conmigo por WhatsApp</a>
+    </p>
+  </div>
+</section>
+<script type="application/ld+json">{faq_jsonld}</script>'''
+
+
+# ---------------------------------------------------------------------------
 # HOMEPAGE
 # ---------------------------------------------------------------------------
 
@@ -886,6 +998,8 @@ def render_home():
     {special_row}
   </div>
 </section>
+
+{render_faq_section()}
 ''' + render_footer()
 
     write_file('index.html', page_shell(head, body))

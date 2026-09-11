@@ -283,6 +283,23 @@ section { padding: var(--space-6) 0; }
 .mc-editing-banner { background: rgba(216,155,64,0.14); color: var(--teal-deep); font-size: 0.85rem; font-weight: 500; padding: 10px 14px; border-radius: 10px; margin-bottom: var(--space-3); }
 .mc-editing-banner a { text-decoration: underline; font-weight: 600; }
 
+/* ---------- FAQ accordion (home) ---------- */
+.faq-list { max-width: 720px; margin: 0 auto; border-top: 1px solid rgba(28,74,68,0.12); }
+.faq-item { border-bottom: 1px solid rgba(28,74,68,0.12); }
+.faq-question { margin: 0; }
+.faq-trigger { display: flex; align-items: center; justify-content: space-between; gap: var(--space-3); width: 100%; padding: 18px 4px; background: none; border: none; text-align: left; font-family: inherit; font-size: 1rem; font-weight: 500; color: var(--ink); cursor: pointer; }
+.faq-trigger span:first-child { flex: 1; }
+.faq-icon { flex: none; position: relative; width: 18px; height: 18px; }
+.faq-icon::before, .faq-icon::after { content: ''; position: absolute; top: 50%; left: 50%; background: var(--teal-deep); transform: translate(-50%, -50%); transition: transform 0.2s ease; }
+.faq-icon::before { width: 14px; height: 2px; }
+.faq-icon::after { width: 2px; height: 14px; }
+.faq-trigger[aria-expanded="true"] .faq-icon::after { transform: translate(-50%, -50%) rotate(90deg) scale(0); }
+.faq-answer { padding: 0 4px var(--space-3); }
+.faq-answer p { color: rgba(18,48,44,0.72); font-size: 0.94rem; max-width: 62ch; }
+.faq-cta { text-align: center; margin-top: var(--space-4); }
+.faq-cta a { font-size: 0.92rem; color: var(--teal-deep); font-weight: 500; border-bottom: 1.5px solid var(--teal-mid); padding-bottom: 2px; }
+.faq-cta a:hover { border-color: var(--teal-deep); }
+
 /* ---------- contact / footer ---------- */
 .cta-final { text-align: center; }
 .cta-final h2 { font-size: clamp(1.7rem, 3vw, 2.3rem); max-width: 22ch; margin: 0 auto; }

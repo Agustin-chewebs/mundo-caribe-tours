@@ -958,7 +958,22 @@
     initCarousels();
     initContactForm();
     initAgustinStories();
+    initFaq();
   });
+
+  // ---------- FAQ accordion (home) ----------
+  function initFaq() {
+    var triggers = document.querySelectorAll('.faq-trigger');
+    triggers.forEach(function (btn) {
+      var answer = document.getElementById(btn.getAttribute('aria-controls'));
+      if (!answer) return;
+      btn.addEventListener('click', function () {
+        var isOpen = btn.getAttribute('aria-expanded') === 'true';
+        btn.setAttribute('aria-expanded', isOpen ? 'false' : 'true');
+        answer.hidden = isOpen;
+      });
+    });
+  }
 
   // ---------- mobile nav (hamburger + panel) ----------
   function initMobileMenu() {
