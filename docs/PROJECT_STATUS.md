@@ -4,7 +4,7 @@ _Última actualización: 2026-09-10, tras confirmar disponibilidad de Akumal + C
 
 ## Último commit y estado del deploy
 
-- **Commit:** (pendiente de commit al cerrar este cambio) — "Akumal + Cenote Nohoch: confirma disponibilidad martes a domingo" (rama `main`).
+- **Commit:** `6a670cc` — "Akumal + Cenote Nohoch: confirma disponibilidad martes a domingo" (rama `main`, subido a GitHub).
 - **Deploy:** `scripts/generate_site.py` regenerado, `~/Desktop/mundo-caribe-cloudflare-deploy` actualizada y verificada (schedule `weekly [0,2,3,4,5,6]` presente en `tour/akumal-cenote-nohoch/index.html`), lista para arrastrar a Cloudflare — confirmar en vivo en `https://mundo-caribe-tours.ignacioagustindannunzio.workers.dev/` después de subirla. El deploy a Cloudflare **es manual**: no hay auto-deploy configurado desde GitHub todavía — cada cambio requiere regenerar (`python3 scripts/generate_site.py`), copiar `index.html`, `assets/`, `categoria/`, `tour/` y `todos-los-tours/` a esa carpeta, y arrastrarla a Cloudflare ("New deployment").
 - Netlify quedó pausado y desconectado de GitHub (decisión tomada por consumo de créditos); ya no es el host activo.
 
