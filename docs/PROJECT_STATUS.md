@@ -1,11 +1,11 @@
 # Mundo Caribe Tours — Estado del proyecto
 
-_Última actualización: 2026-09-10, tras mover los datos del huésped exclusivamente al checkout final._
+_Última actualización: 2026-09-10, tras confirmar disponibilidad de Akumal + Cenote Nohoch._
 
 ## Último commit y estado del deploy
 
-- **Commit:** `431db64` — "Mueve datos del huésped (nombre, hotel, ubicación, pago) sólo al checkout final" (rama `main`, subido a GitHub).
-- **Deploy:** carpeta `~/Desktop/mundo-caribe-cloudflare-deploy` regenerada y verificada (sin campos de huésped en `bw-*`, `CART_VERSION` sin cambios), lista para arrastrar a Cloudflare — confirmar en vivo en `https://mundo-caribe-tours.ignacioagustindannunzio.workers.dev/` después de subirla. El deploy a Cloudflare **es manual**: no hay auto-deploy configurado desde GitHub todavía — cada cambio requiere regenerar (`python3 scripts/generate_site.py`), copiar `index.html`, `assets/`, `categoria/`, `tour/` y `todos-los-tours/` a esa carpeta, y arrastrarla a Cloudflare ("New deployment").
+- **Commit:** (pendiente de commit al cerrar este cambio) — "Akumal + Cenote Nohoch: confirma disponibilidad martes a domingo" (rama `main`).
+- **Deploy:** `scripts/generate_site.py` regenerado, `~/Desktop/mundo-caribe-cloudflare-deploy` actualizada y verificada (schedule `weekly [0,2,3,4,5,6]` presente en `tour/akumal-cenote-nohoch/index.html`), lista para arrastrar a Cloudflare — confirmar en vivo en `https://mundo-caribe-tours.ignacioagustindannunzio.workers.dev/` después de subirla. El deploy a Cloudflare **es manual**: no hay auto-deploy configurado desde GitHub todavía — cada cambio requiere regenerar (`python3 scripts/generate_site.py`), copiar `index.html`, `assets/`, `categoria/`, `tour/` y `todos-los-tours/` a esa carpeta, y arrastrarla a Cloudflare ("New deployment").
 - Netlify quedó pausado y desconectado de GitHub (decisión tomada por consumo de créditos); ya no es el host activo.
 
 ## Tabla final de disponibilidad (17 tours)
@@ -25,7 +25,7 @@ _Última actualización: 2026-09-10, tras mover los datos del huésped exclusiva
 | cozumel | Diario | `daily` | |
 | tiburon-ballena | Junio a septiembre | `seasonal` [jun-sep] | Tentativa dentro de temporada, sin días de semana fijos conocidos |
 | atv-casa-jaguar | Diario | `daily` | |
-| akumal-cenote-nohoch | Consulta disponibilidad | `on_request` | **Pendiente**: no confirmado si tiene días fijos |
+| akumal-cenote-nohoch | Martes a domingo | `weekly` [mar,mié,jue,vie,sáb,dom] | Confirmado por Agustín — lunes bloqueado; antes decía "Consulta disponibilidad" |
 | akumal-expres | Martes a domingo | `weekly` [mar,mié,jue,vie,sáb,dom] | Lunes bloqueado |
 | casa-tortuga-cenotes | Diario | `daily` | |
 | pesca-yate-cancun | Salida: Marina Kaybal, Z.H. Cancún | `on_request` | **Confirmado** todo el año — aviso propio: "Agustín confirma disponibilidad según yate, clima y logística" (vía `schedule_note`, no el aviso genérico) |
@@ -75,7 +75,7 @@ Reglas por tipo:
 
 ## Cambios pendientes
 
-- **Confirmar disponibilidad real** de `tulum-casa-tortuga` y `akumal-cenote-nohoch` (hoy `on_request` por falta de dato, no por decisión definitiva).
+- **Confirmar disponibilidad real** de `tulum-casa-tortuga` (hoy `on_request` por falta de dato, no por decisión definitiva).
 - **Auto-deploy a Cloudflare**: sigue sin configurarse: cada cambio requiere el paso manual de arrastrar la carpeta.
 - Nada de precios ni lógica de cálculo se tocó en esta fase — siguen como quedaron en las fases anteriores.
 
