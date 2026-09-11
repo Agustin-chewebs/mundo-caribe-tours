@@ -263,6 +263,12 @@ section { padding: var(--space-6) 0; }
 .mc-review-summary { margin-top: var(--space-3); font-size: 0.88rem; }
 .mc-review-summary p { margin-top: 6px; }
 .mc-review-summary p:first-child { margin-top: 0; }
+.mc-payment-hint { font-size: 0.78rem; color: rgba(18,48,44,0.55); margin-top: 2px; }
+.mc-next-steps { background: rgba(18,90,80,0.06); border-radius: 10px; padding: 12px 14px; margin-top: var(--space-3); }
+.mc-next-steps-title { font-size: 0.8rem; font-weight: 600; color: var(--teal-deep); margin: 0 0 6px; }
+.mc-next-steps ol { margin: 0; padding-left: 18px; font-size: 0.82rem; color: rgba(18,48,44,0.75); }
+.mc-next-steps li { margin-top: 3px; }
+.mc-next-steps li:first-child { margin-top: 0; }
 
 /* ---------- "editing this cart item" banner (tour booking widget) ---------- */
 .mc-editing-banner { background: rgba(216,155,64,0.14); color: var(--teal-deep); font-size: 0.85rem; font-weight: 500; padding: 10px 14px; border-radius: 10px; margin-bottom: var(--space-3); }

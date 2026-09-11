@@ -264,7 +264,7 @@ TOURS = [
         'slug': 'akumal-cenote-nohoch', 'category': 'aventura', 'photo': 'akumal-cenote-nohoch.jpg',
         'name': 'Akumal + Cenote Nohoch – Aventura entre Tortugas y Naturaleza Subterránea',
         'desc': 'Nado con tortugas en Akumal y Cenote Nohoch, con zona de hamacas.',
-        'long_desc': "Explora Akumal, una de las pocas playas hoy libres de sargazo, donde podrás nadar con tortugas marinas en aguas claras y turquesas, y luego disfruta de la belleza del Cenote Nohoch, una caverna mística con aguas cristalinas, zona de descanso con hamacas y un buffet regional delicioso.",
+        'long_desc': "Explora Akumal, una playa ideal para nadar con tortugas marinas en aguas claras y turquesas, y luego disfruta de la belleza del Cenote Nohoch, una caverna mística con aguas cristalinas, zona de descanso con hamacas y un buffet regional delicioso.",
         'duration': '7-8 horas aprox.', 'availability': 'Martes a domingo',
         'schedule': {'type': 'weekly', 'days': [0, 2, 3, 4, 5, 6]},
         'includes': ['Transportación redonda', 'Snorkel guiado con tortugas en Akumal', 'Equipo de snorkel incluido',

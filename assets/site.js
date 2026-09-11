@@ -38,6 +38,20 @@
     var m = PAYMENT_METHODS.filter(function (p) { return p.value === value; })[0];
     return m ? m.label : '';
   }
+  // Short, honest explanation of what actually happens after choosing each
+  // method — no payment gateway involved, everything is coordinated by
+  // Agustín on WhatsApp once he confirms the tour has availability.
+  var PAYMENT_METHOD_NOTES = {
+    card: 'Recibís un link de pago por WhatsApp después de confirmar disponibilidad.',
+    cash_usd: 'Coordinamos el pago para el día de la excursión.',
+    cash_mxn: 'Coordinamos el pago para el día de la excursión.',
+    usd_transfer: 'Te enviamos los datos de pago por WhatsApp tras confirmar.',
+    ars_transfer: 'Te enviamos los datos de pago por WhatsApp tras confirmar.',
+    cop_transfer: 'Te enviamos los datos de pago por WhatsApp tras confirmar.'
+  };
+  function paymentNote(value) {
+    return PAYMENT_METHOD_NOTES[value] || '';
+  }
   function withSurcharge(total, paymentValue) {
     return paymentValue === 'card' ? Math.round(total * (1 + CARD_SURCHARGE)) : total;
   }
@@ -508,7 +522,9 @@
       '<div id="mc-loc-status" class="mc-loc-status">' + (maps ? '✓ Ubicación agregada' : '') + '</div>' +
       '</div>' +
       '<div class="booking-field"><label for="mc-payment">Método de pago</label>' +
-      paymentSelectHtml('mc-payment', payment) + '</div>' +
+      paymentSelectHtml('mc-payment', payment) +
+      (paymentNote(payment) ? '<p class="payment-note">' + paymentNote(payment) + '</p>' : '') +
+      '</div>' +
       '<p class="payment-note">Precios en USD (1 USD = $' + MXN_REFERENCE_RATE.toFixed(2) + ' MXN, conversión automática si pagás en pesos mexicanos). Transferencia en pesos argentinos o colombianos: cotización del día, datos de pago por WhatsApp.</p>' +
       '<button type="button" class="btn-primary" id="mc-review-cta">Revisar y reservar</button>' +
       '<p class="contact-form-status" id="mc-checkout-status"></p>' +
@@ -560,9 +576,14 @@
       '<p><strong>Hotel:</strong> ' + hotel + ' · Habitación ' + room + '</p>' +
       (maps ? '<p><strong>Ubicación compartida:</strong> sí</p>' : '') +
       '<p><strong>Método de pago:</strong> ' + paymentLabel(payment) + '</p>' +
+      (paymentNote(payment) ? '<p class="mc-payment-hint">' + paymentNote(payment) + '</p>' : '') +
       '</div>' +
       '<p class="booking-fineprint">Esto no confirma la reserva ni cobra nada — Agustín confirma disponibilidad y coordina el pago directo por WhatsApp.</p>' +
-      '<button type="button" class="btn-primary" id="mc-confirm-send">Confirmar y enviar por WhatsApp</button>' +
+      '<div class="mc-next-steps">' +
+      '<p class="mc-next-steps-title">Qué sigue:</p>' +
+      '<ol><li>Agustín confirma cupo.</li><li>Coordinan método de pago.</li><li>Recibís horario y punto de salida.</li></ol>' +
+      '</div>' +
+      '<button type="button" class="btn-primary" id="mc-confirm-send">Enviar solicitud por WhatsApp</button>' +
       '<p class="contact-form-status" id="mc-checkout-status"></p>' +
       '<button type="button" class="btn-secondary" id="mc-back-to-edit">← Volver a editar</button>';
 
