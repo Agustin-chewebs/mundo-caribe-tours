@@ -957,6 +957,7 @@
     initMobileMenu();
     initCarousels();
     initContactForm();
+    initAgustinStories();
   });
 
   // ---------- mobile nav (hamburger + panel) ----------
@@ -1179,6 +1180,150 @@
       }, true);
 
       window.addEventListener('resize', measure);
+    });
+  }
+
+  // ===========================================================================
+  // "CONOCÉ A AGUSTÍN" STORY VIEWER (home)
+  // ===========================================================================
+  //
+  // Instagram-style story viewer, built from scratch (no library, no
+  // Instagram branding/icons/logo anywhere): one progress bar per photo,
+  // tap left/right (desktop click or mobile tap) or swipe to move between
+  // photos, press-and-hold to pause, autoplay that advances on its own,
+  // and a discrete chip (location pin / mention) on the few photos that
+  // carry a confirmed link — opened in a new tab, never inline navigation.
+  // Respects prefers-reduced-motion: no autoplay, no animated progress
+  // fill — the viewer becomes fully manual (tap/swipe/keys still work).
+
+  var STORY_DURATION_MS = 5000;
+
+  function initAgustinStories() {
+    var entry = document.getElementById('mc-story-entry');
+    var dataEl = document.getElementById('agustin-stories-data');
+    var overlay = document.getElementById('mc-story-overlay');
+    if (!entry || !dataEl || !overlay) return;
+
+    var stories = JSON.parse(dataEl.textContent);
+    var barsEl = document.getElementById('mc-story-bars');
+    var imgEl = document.getElementById('mc-story-img');
+    var chipEl = document.getElementById('mc-story-chip');
+    var media = document.getElementById('mc-story-media');
+    var closeBtn = document.getElementById('mc-story-close');
+    var reduceMotion = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+    barsEl.innerHTML = stories.map(function () {
+      return '<div class="mc-story-bar"><div class="mc-story-bar-fill"></div></div>';
+    }).join('');
+    var fills = Array.prototype.slice.call(barsEl.querySelectorAll('.mc-story-bar-fill'));
+
+    var index = 0;
+    var currentAnim = null;
+
+    function stopTimer() {
+      if (currentAnim) { currentAnim.cancel(); currentAnim = null; }
+    }
+    function pauseTimer() {
+      if (currentAnim && currentAnim.playState === 'running') currentAnim.pause();
+    }
+    function resumeTimer() {
+      if (currentAnim && currentAnim.playState === 'paused') currentAnim.play();
+    }
+    function startTimer() {
+      var fill = fills[index];
+      if (reduceMotion) {
+        // No auto-advance, no animated motion — just mark progress
+        // statically so the viewer still shows where you are.
+        fill.style.width = '100%';
+        return;
+      }
+      fill.style.width = '';
+      currentAnim = fill.animate(
+        [{ width: '0%' }, { width: '100%' }],
+        { duration: STORY_DURATION_MS, easing: 'linear', fill: 'forwards' }
+      );
+      currentAnim.onfinish = function () { goNext(); };
+    }
+
+    function updateChip(tag) {
+      if (!tag) { chipEl.hidden = true; return; }
+      var prefix = tag.type === 'maps' ? '📍 ' : '';
+      chipEl.textContent = prefix + tag.label;
+      chipEl.href = tag.url;
+      chipEl.hidden = false;
+    }
+
+    function renderIndex() {
+      fills.forEach(function (fill, i) { fill.style.width = i < index ? '100%' : '0%'; });
+      var s = stories[index];
+      imgEl.src = s.src;
+      updateChip(s.tag);
+      stopTimer();
+      startTimer();
+    }
+
+    function showIndex(i) {
+      if (i < 0) i = 0;
+      if (i >= stories.length) { closeViewer(); return; }
+      index = i;
+      renderIndex();
+    }
+    function goNext() { showIndex(index + 1); }
+    function goPrev() { showIndex(index - 1); }
+
+    function openViewer(startIndex) {
+      document.body.style.overflow = 'hidden';
+      overlay.hidden = false;
+      showIndex(startIndex || 0);
+    }
+    function closeViewer() {
+      stopTimer();
+      overlay.hidden = true;
+      document.body.style.overflow = '';
+    }
+
+    entry.addEventListener('click', function () { openViewer(0); });
+    closeBtn.addEventListener('click', closeViewer);
+    document.addEventListener('keydown', function (e) {
+      if (overlay.hidden) return;
+      if (e.key === 'Escape') closeViewer();
+      else if (e.key === 'ArrowRight') goNext();
+      else if (e.key === 'ArrowLeft') goPrev();
+    });
+
+    // Tap left/right (desktop click or a quick mobile tap) navigates;
+    // press-and-hold pauses and resumes on release; a real horizontal
+    // drag/swipe navigates instead — same drag-vs-click distinction the
+    // tour carousel uses elsewhere in this file, adapted for one axis.
+    var TAP_MAX_MS = 300, MOVE_TOLERANCE = 10, SWIPE_THRESHOLD = 50;
+    var pStart = null;
+    media.addEventListener('pointerdown', function (e) {
+      if (e.target.closest('.mc-story-chip')) return;
+      pStart = { x: e.clientX, y: e.clientY, t: Date.now() };
+      pauseTimer();
+    });
+    media.addEventListener('pointerup', function (e) {
+      if (!pStart) return;
+      var dx = e.clientX - pStart.x, dy = e.clientY - pStart.y, dt = Date.now() - pStart.t;
+      var absDx = Math.abs(dx), absDy = Math.abs(dy);
+      pStart = null;
+      if (absDx > SWIPE_THRESHOLD && absDx > absDy) { dx < 0 ? goNext() : goPrev(); return; }
+      if (dt <= TAP_MAX_MS && absDx < MOVE_TOLERANCE && absDy < MOVE_TOLERANCE) {
+        var rect = media.getBoundingClientRect();
+        var relX = (e.clientX - rect.left) / rect.width;
+        relX < 0.35 ? goPrev() : goNext();
+        return;
+      }
+      resumeTimer();
+    });
+    media.addEventListener('pointercancel', function () { pStart = null; resumeTimer(); });
+
+    // Reacting live to a change in the visitor's motion preference (rare,
+    // but cheap to handle): stop the running animation and re-render the
+    // current story in whichever mode now applies.
+    window.matchMedia('(prefers-reduced-motion: reduce)').addEventListener('change', function (e) {
+      reduceMotion = e.matches;
+      if (!overlay.hidden) { stopTimer(); startTimer(); }
     });
   }
 })();

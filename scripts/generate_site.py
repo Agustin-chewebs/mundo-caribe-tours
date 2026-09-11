@@ -375,6 +375,51 @@ CATEGORY_TAG = {
     'aventura': 'Aventura y cenotes',
 }
 
+# "Conocé a Agustín" story viewer (home). Photos are Agustín's own,
+# untouched (no crop, no edit, stickers left as-is) — order is curated by
+# hand, not random: photo #1 is fixed as the intro, then it alternates
+# with criteria (paisaje/lugar real -> Agustín viviendo la experiencia ->
+# aventura/tour -> momento humano) without repeating the same kind twice
+# in a row. Party/nightlife photos (michelada, yate) are placed later in
+# the sequence on purpose — never first, never in the closing stretch.
+# `tag` is only set for the photos with an explicit, confirmed link from
+# Agustín — never invented for the others.
+AGUSTIN_STORIES = [
+    {'file': '73DB1620-354E-4F1A-A292-32E337B52ED9.JPG', 'tag': None},
+    {'file': '9FE46935-BC9E-4314-B75B-C1E4CD5D2782.JPG', 'tag': None},
+    {'file': '508D33D4-A80D-49E0-A8FC-3F43D32F49B8.JPG', 'tag': None},
+    {'file': '18220B3C-E527-4116-BD4F-E5E308EF746C.JPG', 'tag': None},
+    {'file': 'A8E0A5E5-41B3-45B8-8402-AB332684C7C7.JPG', 'tag': None},
+    {'file': '18CF1303-40E8-4C82-8293-57781418C3BD.JPG', 'tag': None},
+    {'file': '9E7063C3-BBA3-4DFE-A10A-E8ED82B77C6D.JPG', 'tag': None},
+    {'file': 'C20F7DA9-2CA0-4BF5-BB0B-0FFD3BF9A9C4.JPG', 'tag': {
+        'type': 'maps', 'label': 'ATIK World Tulum',
+        'url': 'https://maps.app.goo.gl/qMsWNdN8GG8sZc92A'}},
+    {'file': '93D223B9-97FA-4309-9673-3B907F9A95ED.JPG', 'tag': None},
+    {'file': '26E88537-A8F4-4292-A1F9-9C87074E29BD.JPG', 'tag': None},
+    {'file': 'C5C68CEC-2A0A-4E92-958B-866E7A3BA276.JPG', 'tag': None},
+    {'file': '5A00AAF0-5D22-4749-8230-E5E54E51151F.JPG', 'tag': {
+        'type': 'maps', 'label': 'Xplor by Xcaret',
+        'url': 'https://maps.app.goo.gl/qu67vocsbQ7r9vHLA'}},
+    {'file': '70F8514D-5307-4341-AD23-73B5D22A81E9.JPG', 'tag': {
+        'type': 'maps', 'label': "Sian Ka'an · Reserva de la Biosfera",
+        'url': 'https://maps.app.goo.gl/2PZxa7mA4U2pAAHW7'}},
+    {'file': 'FD94F6C5-4EB0-4AB8-B8F5-8295A4A2257F.JPG', 'tag': {
+        'type': 'maps', 'label': 'Marina Tower Center, Puerto Cancún',
+        'url': 'https://maps.app.goo.gl/H2GBiMk6z55NbCSQ9'}},
+    {'file': 'DBDF124B-F458-4DE1-B5E4-5D53F813A0D1.JPG', 'tag': {
+        'type': 'maps', 'label': 'Xplor by Xcaret',
+        'url': 'https://maps.app.goo.gl/qu67vocsbQ7r9vHLA'}},
+    {'file': 'D7C971EA-1CB5-4252-A3CD-D83431A870D8.JPG', 'tag': {
+        'type': 'maps', 'label': 'Playa de Xpu-Ha',
+        'url': 'https://maps.app.goo.gl/gYmiBgkPqPkvBeMt7'}},
+    {'file': '5F937755-BB0B-434A-A8FC-DABD27EB1668.JPG', 'tag': None},
+    {'file': '0E5F81A1-EA04-4ED3-83F8-755A382F76EA.JPG', 'tag': {
+        'type': 'mention', 'label': '@puravida.wey',
+        'url': 'https://www.instagram.com/puravida.wey/'}},
+    {'file': 'C758011B-6608-477E-B2D0-295D9450640B.JPG', 'tag': None},
+]
+
 # ---------------------------------------------------------------------------
 # HELPERS
 # ---------------------------------------------------------------------------
@@ -668,6 +713,44 @@ def category_cards_plain(cat):
 
 
 # ---------------------------------------------------------------------------
+# "CONOCÉ A AGUSTÍN" STORY VIEWER (home)
+# ---------------------------------------------------------------------------
+
+def render_agustin_stories():
+    """Entry ring + JSON payload for the story viewer. All viewer behavior
+    (progress bars, tap/swipe nav, autoplay, pause, reduced-motion) lives in
+    assets/site.js — this only ships the curated order and photo data."""
+    stories_json = json.dumps([
+        {
+            'src': '/assets/stories/' + s['file'],
+            'tag': s['tag'],
+        }
+        for s in AGUSTIN_STORIES
+    ], ensure_ascii=False)
+    first_photo = '/assets/stories/' + AGUSTIN_STORIES[0]['file']
+    return f'''<section class="reveal mc-story-entry-section">
+  <div class="container">
+    <button type="button" id="mc-story-entry" class="mc-story-entry" aria-haspopup="dialog">
+      <span class="mc-story-ring"><img src="{first_photo}" alt="" loading="lazy"></span>
+      <span class="mc-story-entry-label">Conocé a Agustín</span>
+    </button>
+  </div>
+</section>
+<script type="application/json" id="agustin-stories-data">{stories_json}</script>
+<div id="mc-story-overlay" class="mc-story-overlay" hidden role="dialog" aria-modal="true" aria-label="Conocé a Agustín">
+  <div class="mc-story-bars" id="mc-story-bars"></div>
+  <div class="mc-story-header">
+    <span class="mc-story-header-name">Conocé a Agustín</span>
+    <button type="button" class="mc-story-close" id="mc-story-close" aria-label="Cerrar">×</button>
+  </div>
+  <div class="mc-story-media" id="mc-story-media">
+    <img id="mc-story-img" src="" alt="">
+    <a id="mc-story-chip" class="mc-story-chip" href="#" target="_blank" rel="noopener noreferrer" hidden></a>
+  </div>
+</div>'''
+
+
+# ---------------------------------------------------------------------------
 # HOMEPAGE
 # ---------------------------------------------------------------------------
 
@@ -743,6 +826,8 @@ def render_home():
     </div>
   </div>
 </section>
+
+{render_agustin_stories()}
 
 {path_selector}
 
