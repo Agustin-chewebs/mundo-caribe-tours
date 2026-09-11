@@ -4,12 +4,13 @@
   var WA_NUMBER = '529841191147';
 
   var LS_CART = 'mc_cart';
+  var LS_NAME = 'mc_name';
   var LS_HOTEL = 'mc_hotel';
   var LS_ROOM = 'mc_room';
   var LS_MAPS = 'mc_maps';
   var LS_PAYMENT = 'mc_payment';
   var LS_CART_VERSION = 'mc_cart_v';
-  var CART_VERSION = 2; // bump this whenever the shape of a cart item changes, to auto-clear stale carts
+  var CART_VERSION = 4; // bump this whenever the shape of a cart item changes, to auto-clear stale carts
 
   // ---------- payment methods ----------
   // All tour prices are in USD. Fixed reference rate given by Agustín, used
@@ -127,14 +128,248 @@
     return d + ' ' + meses[m] + ' ' + y;
   }
 
-  function todayISO() {
-    var d = new Date();
-    var mm = String(d.getMonth() + 1).padStart(2, '0');
-    var dd = String(d.getDate()).padStart(2, '0');
-    return d.getFullYear() + '-' + mm + '-' + dd;
+  // Each cart item carries its OWN date and its OWN headcount — a cart with
+  // several tours never shares one calendar or one passenger count, since
+  // different tours in the same reservation can carry different people/dates.
+  function cartItemDateLine(item) {
+    if (!item.date) return item.tentative ? 'Fecha a coordinar (sin días fijos)' : 'Sin fecha elegida';
+    return (item.tentative ? 'Fecha tentativa: ' : 'Fecha: ') + fmtDate(item.date);
+  }
+  function cartItemPaxLine(item) {
+    var bits = [];
+    if (item.optionLabel) bits.push(item.optionLabel);
+    if (item.adults != null) {
+      bits.push(item.adults + (item.adults === 1 ? ' adulto' : ' adultos'));
+      if (item.children) bits.push(item.children + (item.children === 1 ? ' niño' : ' niños'));
+    } else if (item.persons != null) {
+      bits.push(item.persons + (item.persons === 1 ? ' persona' : ' personas'));
+    }
+    if (item.infants) bits.push(item.infants + (item.infants === 1 ? ' infante' : ' infantes'));
+    var totalPax = (item.adults || 0) + (item.children || 0) + (item.persons || 0) + (item.infants || 0);
+    return bits.join(', ') + ' — ' + totalPax + ' pax para transporte';
+  }
+
+  // "Today" as the calendar (Cancún/Riviera Maya, no DST) sees it — NOT the
+  // visitor's own device timezone, which could disagree by hours and shift
+  // the day near midnight. Intl with a fixed timeZone gives us that
+  // directly, no library needed.
+  var CANCUN_TZ = 'America/Cancun';
+  var cancunTodayFmt = null;
+  function cancunTodayISO() {
+    if (!cancunTodayFmt) {
+      cancunTodayFmt = new Intl.DateTimeFormat('en-CA', { timeZone: CANCUN_TZ, year: 'numeric', month: '2-digit', day: '2-digit' });
+    }
+    return cancunTodayFmt.format(new Date()); // en-CA formats as YYYY-MM-DD
+  }
+
+  // Weekday (0=domingo..6=sábado) of a plain Y-M-D calendar date. Deliberately
+  // NOT `new Date(iso).getDay()` — that parses the string as UTC midnight and
+  // then reads it back in the BROWSER'S LOCAL timezone, which can land on the
+  // wrong calendar day entirely depending on the visitor's offset. Date.UTC +
+  // getUTCDay never touches any local timezone, so the same iso always gives
+  // the same weekday everywhere.
+  function isoWeekday(iso) {
+    var p = iso.split('-').map(Number);
+    return new Date(Date.UTC(p[0], p[1] - 1, p[2])).getUTCDay();
   }
 
   function usd(n) { return '$' + n.toLocaleString('en-US') + ' USD'; }
+
+  // ===========================================================================
+  // CUSTOM CALENDAR — a compact field that opens a popover grid showing
+  // only the days a tour actually runs. Replaces the native
+  // <input type="date">, which can't grey out individual weekdays in its
+  // own picker UI, and whose click-to-open area is inconsistent across
+  // browsers (clicking the text often just moves a cursor; only the tiny
+  // icon reliably opens the calendar).
+  //
+  // Blocked days use `aria-disabled` (not the native `disabled`
+  // attribute) so they stay reachable by arrow-key navigation — a
+  // fully-disabled button can't receive focus at all, which would make it
+  // impossible to arrow onto a blocked day to see it's blocked. The click
+  // and Enter/Space handlers both explicitly ignore aria-disabled cells,
+  // so nothing blocked is ever selectable, visually or by keyboard.
+  // ===========================================================================
+
+  var MESES_LARGO = ['enero', 'febrero', 'marzo', 'abril', 'mayo', 'junio', 'julio', 'agosto', 'septiembre', 'octubre', 'noviembre', 'diciembre'];
+
+  function daysInMonth(y, m) { return new Date(Date.UTC(y, m, 0)).getUTCDate(); } // m is 1-12
+  function pad2(n) { return n < 10 ? '0' + n : '' + n; }
+  function isoOf(y, m, d) { return y + '-' + pad2(m) + '-' + pad2(d); }
+
+  // THE single source of truth for "can this date be picked" — used by
+  // the calendar to greek out cells AND, separately, called again as a
+  // hard gate right before adding to cart / sending the WhatsApp message.
+  // Visually blocking a day is not enough on its own: the date actually
+  // has to be re-checked at both of those moments too.
+  function isDateAllowed(iso, schedule) {
+    if (!iso || !schedule) return false;
+    if (iso < cancunTodayISO()) return false;
+    if (schedule.type === 'weekly') return schedule.days.indexOf(isoWeekday(iso)) !== -1;
+    if (schedule.type === 'seasonal') return schedule.months.indexOf(parseInt(iso.split('-')[1], 10)) !== -1;
+    return true; // daily, on_request: any future date
+  }
+  function isTentativeSchedule(schedule) {
+    return !schedule || schedule.type === 'seasonal' || schedule.type === 'on_request';
+  }
+
+  function datePickerHtml(id) {
+    return '<div class="mc-datepicker" id="' + id + '">' +
+      '<button type="button" class="mc-dp-trigger" aria-haspopup="true" aria-expanded="false">' +
+      '<span class="mc-dp-trigger-text">Elegí una fecha</span><span class="mc-dp-trigger-icon">📅</span>' +
+      '</button>' +
+      '<div class="mc-dp-panel" hidden>' +
+      '<div class="mc-dp-head">' +
+      '<button type="button" class="mc-dp-nav" data-dir="-1" aria-label="Mes anterior">‹</button>' +
+      '<span class="mc-dp-month"></span>' +
+      '<button type="button" class="mc-dp-nav" data-dir="1" aria-label="Mes siguiente">›</button>' +
+      '</div>' +
+      '<div class="mc-dp-weekdays"><span>D</span><span>L</span><span>M</span><span>M</span><span>J</span><span>V</span><span>S</span></div>' +
+      '<div class="mc-dp-grid" role="grid"></div>' +
+      '<p class="mc-dp-blocked-msg" aria-live="polite" hidden>Ese día no está disponible para este tour.</p>' +
+      '</div>' +
+      '</div>';
+  }
+
+  // container: an element already holding the picker's static markup (see
+  // datePickerHtml). opts: { schedule, initialISO: string|null, tentative:
+  // bool, onSelect: function(iso) }
+  function initDatePicker(container, opts) {
+    var todayISO = cancunTodayISO();
+    var todayParts = todayISO.split('-').map(Number);
+    var viewYear = todayParts[0], viewMonth = todayParts[1]; // 1-12
+    var selectedISO = opts.initialISO || null;
+    if (selectedISO) {
+      var sp = selectedISO.split('-').map(Number);
+      viewYear = sp[0]; viewMonth = sp[1];
+    }
+
+    var trigger = container.querySelector('.mc-dp-trigger');
+    var triggerText = container.querySelector('.mc-dp-trigger-text');
+    var panel = container.querySelector('.mc-dp-panel');
+    var monthEl = container.querySelector('.mc-dp-month');
+    var gridEl = container.querySelector('.mc-dp-grid');
+    var prevBtn = container.querySelector('[data-dir="-1"]');
+    var nextBtn = container.querySelector('[data-dir="1"]');
+    var blockedMsgEl = container.querySelector('.mc-dp-blocked-msg');
+
+    function updateTriggerText() {
+      if (!selectedISO) { triggerText.textContent = 'Elegí una fecha'; return; }
+      triggerText.textContent = (opts.tentative ? 'Fecha tentativa: ' : 'Fecha elegida: ') + fmtDate(selectedISO);
+    }
+    updateTriggerText();
+
+    function open() {
+      panel.hidden = false;
+      trigger.setAttribute('aria-expanded', 'true');
+      blockedMsgEl.hidden = true;
+      render();
+      var toFocus = gridEl.querySelector('.mc-dp-day[tabindex="0"]') || gridEl.querySelector('.mc-dp-day');
+      if (toFocus) toFocus.focus();
+    }
+    function close() {
+      panel.hidden = true;
+      trigger.setAttribute('aria-expanded', 'false');
+    }
+    trigger.addEventListener('click', function () {
+      if (panel.hidden) open(); else close();
+    });
+    document.addEventListener('click', function (e) {
+      if (!panel.hidden && !container.contains(e.target)) close();
+    });
+    container.addEventListener('keydown', function (e) {
+      if (e.key === 'Escape' && !panel.hidden) { close(); trigger.focus(); }
+    });
+
+    function render() {
+      monthEl.textContent = MESES_LARGO[viewMonth - 1] + ' ' + viewYear;
+      gridEl.innerHTML = '';
+      var firstWd = isoWeekday(isoOf(viewYear, viewMonth, 1));
+      for (var i = 0; i < firstWd; i++) {
+        var blank = document.createElement('span');
+        blank.className = 'mc-dp-blank';
+        gridEl.appendChild(blank);
+      }
+      var total = daysInMonth(viewYear, viewMonth);
+      var cells = [];
+      for (var d = 1; d <= total; d++) {
+        var iso = isoOf(viewYear, viewMonth, d);
+        var allowed = isDateAllowed(iso, opts.schedule);
+        var btn = document.createElement('button');
+        btn.type = 'button';
+        btn.className = 'mc-dp-day';
+        btn.setAttribute('role', 'gridcell');
+        btn.textContent = d;
+        btn.setAttribute('data-iso', iso);
+        btn.setAttribute('aria-disabled', allowed ? 'false' : 'true');
+        btn.tabIndex = -1;
+        if (iso === selectedISO) btn.classList.add('selected');
+        if (iso === todayISO) btn.classList.add('today');
+        cells.push(btn);
+        gridEl.appendChild(btn);
+      }
+      // Roving tabindex: exactly one cell is tab-reachable — the selected
+      // day if it's in view, else today if it's in view, else the first
+      // enabled day, else just the first cell so focus always lands
+      // somewhere when opening the picker.
+      var roving = cells.filter(function (b) { return b.getAttribute('data-iso') === selectedISO; })[0]
+        || cells.filter(function (b) { return b.getAttribute('data-iso') === todayISO; })[0]
+        || cells.filter(function (b) { return b.getAttribute('aria-disabled') === 'false'; })[0]
+        || cells[0];
+      if (roving) roving.tabIndex = 0;
+      prevBtn.disabled = (viewYear === todayParts[0] && viewMonth === todayParts[1]);
+    }
+
+    function selectCell(cell) {
+      if (!cell) return;
+      if (cell.getAttribute('aria-disabled') === 'true') {
+        blockedMsgEl.hidden = false;
+        return;
+      }
+      blockedMsgEl.hidden = true;
+      selectedISO = cell.getAttribute('data-iso');
+      updateTriggerText();
+      close();
+      trigger.focus();
+      opts.onSelect(selectedISO);
+    }
+
+    gridEl.addEventListener('click', function (e) {
+      var cell = e.target.closest('.mc-dp-day');
+      if (cell) selectCell(cell);
+    });
+
+    // Roving-tabindex arrow key navigation: moves focus WITHIN the
+    // current month grid (±1 day, ±7 days). Blocked cells stay reachable
+    // (they're aria-disabled, not `disabled`) so a keyboard user can
+    // land on one and see it's blocked, not just have it silently skipped.
+    gridEl.addEventListener('keydown', function (e) {
+      var current = e.target.closest('.mc-dp-day');
+      if (!current) return;
+      if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); selectCell(current); return; }
+      var delta = { ArrowLeft: -1, ArrowRight: 1, ArrowUp: -7, ArrowDown: 7 }[e.key];
+      if (!delta) return;
+      e.preventDefault();
+      var cells = Array.prototype.slice.call(gridEl.querySelectorAll('.mc-dp-day'));
+      var idx = cells.indexOf(current) + delta;
+      if (idx < 0 || idx >= cells.length) return; // simple same-month clamp
+      var next = cells[idx];
+      current.tabIndex = -1;
+      next.tabIndex = 0;
+      next.focus();
+    });
+
+    prevBtn.addEventListener('click', function () {
+      viewMonth--; if (viewMonth < 1) { viewMonth = 12; viewYear--; }
+      render();
+    });
+    nextBtn.addEventListener('click', function () {
+      viewMonth++; if (viewMonth > 12) { viewMonth = 1; viewYear++; }
+      render();
+    });
+
+    return { getSelected: function () { return selectedISO; } };
+  }
 
   // ===========================================================================
   // CART (global, injected on every page)
@@ -218,7 +453,8 @@
         (item.photo ? '<img src="' + item.photo + '" alt="">' : '<div class="mc-cart-item-noimg">🌴</div>') +
         '<div class="mc-cart-item-info">' +
         '<div class="mc-cart-item-name">' + item.name + '</div>' +
-        '<div class="mc-cart-item-detail">' + item.detail + '</div>' +
+        '<div class="mc-cart-item-detail">' + cartItemDateLine(item) + '</div>' +
+        '<div class="mc-cart-item-detail">' + cartItemPaxLine(item) + '</div>' +
         '<div class="mc-cart-item-price">' + (typeof item.total === 'number' ? usd(item.total) : 'A cotizar') + '</div>' +
         '</div>' +
         '<button type="button" class="mc-cart-remove" data-idx="' + i + '" aria-label="Quitar">×</button>' +
@@ -229,17 +465,19 @@
       b.addEventListener('click', function () { removeFromCart(parseInt(b.getAttribute('data-idx'), 10)); });
     });
 
+    var name = getStr(LS_NAME);
     var hotel = getStr(LS_HOTEL);
     var room = getStr(LS_ROOM);
     var maps = getStr(LS_MAPS);
     var payment = getStr(LS_PAYMENT);
-    // "Personas" = tamaño del grupo, no la suma entre tours (las mismas personas pueden hacer varios tours)
-    var totalPersons = cart.reduce(function (max, item) { return Math.max(max, item.headcount || 0); }, 0);
+    var anyTentative = cart.some(function (item) { return item.tentative; });
 
     checkoutEl.innerHTML =
       '<div class="mc-cart-total-row"><span>Total</span><strong>' + formatTotal(total, payment) + (hasQuote ? ' + ítems a cotizar' : '') + '</strong></div>' +
       (payment === 'card' ? '<p class="mc-cart-persons">Incluye 5% de recargo por pago con tarjeta.</p>' : '') +
-      '<p class="mc-cart-persons">Personas: ' + totalPersons + '</p>' +
+      (anyTentative ? '<p class="mc-cart-persons">⚠️ Uno o más tours tienen fecha tentativa — Agustín confirma disponibilidad por WhatsApp.</p>' : '') +
+      '<div class="booking-field"><label for="mc-name">Nombre completo</label>' +
+      '<input type="text" id="mc-name" placeholder="Nombre y apellido de quien reserva" value="' + name.replace(/"/g, '&quot;') + '"></div>' +
       '<div class="booking-field-row">' +
       '<div class="booking-field"><label for="mc-hotel">Hotel / lugar de hospedaje</label>' +
       '<input type="text" id="mc-hotel" placeholder="Ej: Hotel Grand Sirenis" value="' + hotel.replace(/"/g, '&quot;') + '"></div>' +
@@ -255,8 +493,10 @@
       '<p class="payment-note">Precios en USD (1 USD = $' + MXN_REFERENCE_RATE.toFixed(2) + ' MXN, conversión automática si pagás en pesos mexicanos). Transferencia en pesos argentinos o colombianos: cotización del día, datos de pago por WhatsApp.</p>' +
       '<button type="button" class="btn-primary" id="mc-checkout-cta">Reservar todo por WhatsApp</button>' +
       '<p class="contact-form-status" id="mc-checkout-status"></p>' +
+      '<p class="booking-fineprint">Esto no confirma la reserva ni cobra nada — Agustín confirma disponibilidad y coordina el pago directo por WhatsApp.</p>' +
       '<button type="button" class="mc-clear-cart" id="mc-clear-cart">Vaciar carrito</button>';
 
+    document.getElementById('mc-name').addEventListener('input', function (e) { setStr(LS_NAME, e.target.value); e.target.classList.toggle('field-invalid', !e.target.value.trim()); });
     document.getElementById('mc-hotel').addEventListener('input', function (e) { setStr(LS_HOTEL, e.target.value); e.target.classList.toggle('field-invalid', !e.target.value.trim()); });
     document.getElementById('mc-room').addEventListener('input', function (e) { setStr(LS_ROOM, e.target.value); e.target.classList.toggle('field-invalid', !e.target.value.trim()); });
     document.getElementById('mc-payment').addEventListener('change', function (e) { setStr(LS_PAYMENT, e.target.value); renderCartDrawer(); });
@@ -286,47 +526,61 @@
   function sendCartToWhatsApp() {
     var cart = getCart();
     if (cart.length === 0) return;
+    var name = getStr(LS_NAME);
     var hotel = getStr(LS_HOTEL);
     var room = getStr(LS_ROOM);
     var maps = getStr(LS_MAPS);
     var payment = getStr(LS_PAYMENT);
 
+    // Re-check every item's date against ITS OWN schedule right before
+    // sending — a date that was valid when added could, in principle,
+    // no longer be (cart loaded from an old localStorage snapshot, etc).
+    // Visually blocking bad days in the calendar isn't enough on its own.
+    var invalidTour = cart.filter(function (item) { return !isDateAllowed(item.date, item.schedule); })[0];
+
     var missing = [];
+    if (!name.trim()) missing.push('el nombre completo');
     if (!hotel.trim()) missing.push('el hotel');
     if (!room.trim()) missing.push('el número de habitación');
     if (!payment) missing.push('el método de pago');
-    if (missing.length) {
+    if (invalidTour || missing.length) {
       var status = document.getElementById('mc-checkout-status');
       if (status) {
-        status.textContent = 'Completá ' + missing.join(', ') + ' antes de reservar.';
+        status.textContent = invalidTour
+          ? 'La fecha de "' + invalidTour.name + '" ya no es válida — abrí ese tour y elegí otra.'
+          : 'Completá ' + missing.join(', ') + ' antes de reservar.';
         status.className = 'contact-form-status error';
       }
-      ['mc-hotel', 'mc-room', 'mc-payment'].forEach(function (id) {
+      ['mc-name', 'mc-hotel', 'mc-room', 'mc-payment'].forEach(function (id) {
         var f = document.getElementById(id);
         if (!f) return;
-        var isMissing = (id === 'mc-hotel' && !hotel.trim()) || (id === 'mc-room' && !room.trim()) || (id === 'mc-payment' && !payment);
+        var isMissing = (id === 'mc-name' && !name.trim()) || (id === 'mc-hotel' && !hotel.trim()) || (id === 'mc-room' && !room.trim()) || (id === 'mc-payment' && !payment);
         f.classList.toggle('field-invalid', isMissing);
       });
       return;
     }
 
-    var lines = ['¡Hola! Quiero reservar estos tours:', ''];
+    // Each tour keeps its OWN date and its OWN passenger breakdown — never
+    // summed or shared across tours, so the same travel party doing two
+    // excursions isn't miscounted as twice the people.
+    var lines = ['¡Hola! Quiero reservar estos tours:', '', 'Reserva a nombre de: ' + name, ''];
     var total = 0;
-    var totalPersons = 0;
+    var anyTentative = false;
     cart.forEach(function (item, i) {
       lines.push((i + 1) + '. ' + item.name);
-      lines.push('   ' + item.detail);
+      lines.push('   ' + cartItemDateLine(item));
+      lines.push('   ' + cartItemPaxLine(item));
       lines.push('   ' + (typeof item.total === 'number' ? usd(item.total) : 'A cotizar'));
       if (typeof item.total === 'number') total += item.total;
-      // "Personas" = tamaño del grupo, no la suma entre tours (las mismas personas pueden hacer varios tours)
-      totalPersons = Math.max(totalPersons, item.headcount || 0);
+      if (item.tentative) anyTentative = true;
       lines.push('');
     });
     lines.push('Total: ' + formatTotal(total, payment) + (payment === 'card' ? ' (incluye 5% de recargo por tarjeta)' : ''));
-    lines.push('Personas: ' + totalPersons);
     lines.push('Método de pago: ' + paymentLabel(payment));
-    if (hotel) lines.push('Hotel: ' + hotel + (room ? ' · Habitación: ' + room : ''));
+    lines.push('Hotel: ' + hotel + ' · Habitación: ' + room);
     if (maps) lines.push('Ubicación: ' + maps);
+    lines.push('');
+    lines.push('⚠️ Esto no es una reserva confirmada ni un cobro — Agustín confirma disponibilidad' + (anyTentative ? ' (hay fechas tentativas a coordinar)' : '') + ' y coordina el pago directo por WhatsApp.');
     window.open(waLink(lines.join('\n')), '_blank', 'noopener');
   }
 
@@ -346,6 +600,10 @@
 
     var state = { date: '', adults: 1, children: 0, infants: 0, persons: 1, tierIndex: 0 };
     var hasInfants = data.type === 'adult_child' || data.type === 'per_person' || data.type === 'tiers';
+    // schedule.type 'seasonal' or 'on_request' = no known fixed weekly
+    // cadence, so any allowed date is pickable but must read as tentative,
+    // never as a confirmed slot (see the `schedule` field in the data).
+    var tentative = isTentativeSchedule(data.schedule);
 
     function calcTotal() {
       // infants (0-2 años) never add to the price, in any pricing model
@@ -377,8 +635,17 @@
       html += '<div class="booking-price">' + usd(data.tiers[0].price) + ' <small>desde, por el grupo (hasta ' + (data.maxGroup || 7) + ' personas)</small></div>';
     }
 
-    html += '<div class="booking-field"><label for="bw-date">Fecha preferida</label>' +
-      '<input type="date" id="bw-date" min="' + todayISO() + '"></div>';
+    var seasonMonths = data.schedule && data.schedule.type === 'seasonal' ? data.schedule.months : null;
+    // A tour can override the generic tentative-note wording with its own
+    // real reason (e.g. pesca-yate-cancun: boat/weather/logistics) via
+    // `scheduleNote` — falls back to the generic "no fixed days" note.
+    var tentativeNote = data.scheduleNote || ('Este tour no tiene días fijos de operación' +
+      (seasonMonths ? ' (opera de ' + MESES_LARGO[seasonMonths[0] - 1] + ' a ' + MESES_LARGO[seasonMonths[seasonMonths.length - 1] - 1] + ')' : '') +
+      ' — la fecha queda sujeta a que Agustín confirme disponibilidad por WhatsApp.');
+    html += '<div class="booking-field"><label>' + (tentative ? 'Fecha tentativa' : 'Fecha preferida') + '</label>' +
+      datePickerHtml('bw-datepicker') +
+      (tentative ? '<p class="payment-note">' + tentativeNote + '</p>' : '') +
+      '</div>';
 
     if (data.type === 'tiers' || data.type === 'duration_group') {
       html += '<div class="booking-field"><label>' + (data.type === 'duration_group' ? 'Duración' : 'Opción') + '</label><div class="tier-options" id="bw-tiers">';
@@ -409,6 +676,8 @@
       html += '<div class="booking-total-row"><span class="label">Total</span><span class="total" id="bw-total">' + usd(calcTotal()) + '</span></div>';
     }
 
+    html += '<div class="booking-field"><label for="bw-name">Nombre completo</label>' +
+      '<input type="text" id="bw-name" placeholder="Nombre y apellido de quien reserva" value="' + getStr(LS_NAME).replace(/"/g, '&quot;') + '"></div>';
     html += '<div class="booking-field-row">' +
       '<div class="booking-field"><label for="bw-hotel">Hotel / lugar de hospedaje</label>' +
       '<input type="text" id="bw-hotel" placeholder="Ej: Hotel Grand Sirenis" value="' + getStr(LS_HOTEL).replace(/"/g, '&quot;') + '"></div>' +
@@ -435,7 +704,17 @@
     el.innerHTML = html;
     updateTotal(); // re-sync in case a payment method (card +5%) was already remembered from a previous visit
 
-    document.getElementById('bw-date').addEventListener('change', function (e) { state.date = e.target.value; });
+    var datepickerEl = document.getElementById('bw-datepicker');
+    initDatePicker(datepickerEl, {
+      schedule: data.schedule,
+      tentative: tentative,
+      onSelect: function (iso) {
+        state.date = iso;
+        datepickerEl.classList.remove('field-invalid');
+      }
+    });
+
+    document.getElementById('bw-name').addEventListener('input', function (e) { setStr(LS_NAME, e.target.value); e.target.classList.toggle('field-invalid', !e.target.value.trim()); });
     document.getElementById('bw-hotel').addEventListener('input', function (e) { setStr(LS_HOTEL, e.target.value); e.target.classList.toggle('field-invalid', !e.target.value.trim()); });
     document.getElementById('bw-room').addEventListener('input', function (e) { setStr(LS_ROOM, e.target.value); e.target.classList.toggle('field-invalid', !e.target.value.trim()); });
     document.getElementById('bw-payment').addEventListener('change', function (e) { setStr(LS_PAYMENT, e.target.value); e.target.classList.toggle('field-invalid', !e.target.value); updateTotal(); });
@@ -489,33 +768,30 @@
       t.textContent = formatTotal(calcTotal(), payment) + (payment === 'card' ? ' (+5% tarjeta)' : '');
     }
 
-    function infantsSuffix() {
-      return (hasInfants && state.infants > 0) ? ', ' + state.infants + ' infante' + (state.infants > 1 ? 's' : '') : '';
-    }
-
-    function detailText() {
-      if (data.type === 'adult_child') {
-        var who = state.adults + (state.adults === 1 ? ' adulto' : ' adultos');
-        if (state.children > 0) who += ', ' + state.children + (state.children === 1 ? ' niño' : ' niños');
-        return fmtDate(state.date) + ' · ' + who + infantsSuffix();
-      }
-      if (data.type === 'tiers') return fmtDate(state.date) + ' · ' + data.tiers[state.tierIndex].label + ' · ' + state.persons + ' personas' + infantsSuffix();
-      if (data.type === 'duration_group') return fmtDate(state.date) + ' · ' + data.tiers[state.tierIndex].label + ' · ' + state.persons + ' pasajeros';
-      if (data.type === 'per_person') return fmtDate(state.date) + ' · ' + state.persons + ' personas' + infantsSuffix();
-      return fmtDate(state.date) + ' · ' + state.persons + ' personas (cotización)';
-    }
-
-    function headcount() {
-      if (data.type === 'adult_child') return state.adults + state.children;
-      if (data.type === 'quote') return state.persons;
-      return state.persons;
+    // Structured passenger fields for this cart item — kept per-tour
+    // (never summed/shared with other tours in the same cart), so pricing
+    // and the WhatsApp summary always reflect THIS tour's own group.
+    function cartFields() {
+      var f = { optionLabel: null, adults: null, children: null, persons: null, infants: hasInfants ? state.infants : 0 };
+      if (data.type === 'adult_child') { f.adults = state.adults; f.children = state.children; }
+      else if (data.type === 'tiers') { f.persons = state.persons; f.optionLabel = data.tiers[state.tierIndex].label; }
+      else if (data.type === 'duration_group') { f.persons = state.persons; f.optionLabel = data.tiers[state.tierIndex].label; }
+      else { f.persons = state.persons; } // per_person, quote
+      return f;
     }
 
     document.getElementById('bw-cta').addEventListener('click', function () {
+      var name = getStr(LS_NAME);
       var hotel = getStr(LS_HOTEL);
       var room = getStr(LS_ROOM);
       var payment = getStr(LS_PAYMENT);
+      // Re-check the date against the schedule here too — greying out
+      // invalid days in the calendar isn't enough on its own (state could
+      // in principle hold a stale/invalid value some other way).
+      var dateOk = isDateAllowed(state.date, data.schedule);
       var missing = [];
+      if (!dateOk) missing.push('una fecha válida para este tour');
+      if (!name.trim()) missing.push('el nombre completo');
       if (!hotel.trim()) missing.push('el hotel');
       if (!room.trim()) missing.push('el número de habitación');
       if (!payment) missing.push('el método de pago');
@@ -525,20 +801,28 @@
           status.textContent = 'Completá ' + missing.join(', ') + ' antes de agregar al carrito.';
           status.className = 'contact-form-status error';
         }
-        ['bw-hotel', 'bw-room', 'bw-payment'].forEach(function (id) {
+        datepickerEl.classList.toggle('field-invalid', !dateOk);
+        ['bw-name', 'bw-hotel', 'bw-room', 'bw-payment'].forEach(function (id) {
           var f = document.getElementById(id);
           if (!f) return;
-          var isMissing = (id === 'bw-hotel' && !hotel.trim()) || (id === 'bw-room' && !room.trim()) || (id === 'bw-payment' && !payment);
+          var isMissing = (id === 'bw-name' && !name.trim()) || (id === 'bw-hotel' && !hotel.trim()) || (id === 'bw-room' && !room.trim()) || (id === 'bw-payment' && !payment);
           f.classList.toggle('field-invalid', isMissing);
         });
         return;
       }
       var cart = getCart();
+      var fields = cartFields();
       cart.push({
         name: data.name,
-        detail: detailText(),
+        date: state.date,
+        tentative: tentative,
+        schedule: data.schedule,
+        optionLabel: fields.optionLabel,
+        adults: fields.adults,
+        children: fields.children,
+        persons: fields.persons,
+        infants: fields.infants,
         total: data.type === 'quote' ? null : calcTotal(),
-        headcount: headcount(),
         url: pageUrl,
         photo: photoSrc,
       });

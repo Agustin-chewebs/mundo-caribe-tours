@@ -72,13 +72,32 @@ CATEGORIES = [
 CAT_BY_KEY = {c['key']: c for c in CATEGORIES}
 
 # Tours with their own page (rich content + booking widget)
+#
+# 'schedule': structured source of truth for the booking calendar (Phase 3,
+# 2026-09-10). Transcribed BY HAND from each tour's real 'availability'
+# text below and from Agustín's explicit classification — never parsed
+# from that text at runtime, never guessed. One of four types:
+#   - {'type': 'weekly', 'days': [...]} — fixed days of the week, using
+#     JS's Date.getDay() convention: 0=domingo, 1=lunes, 2=martes,
+#     3=miércoles, 4=jueves, 5=viernes, 6=sábado. Only these days are
+#     selectable; the date is a real confirmed slot.
+#   - {'type': 'daily'} — runs every day; any future date is a real
+#     confirmed slot.
+#   - {'type': 'seasonal', 'months': [...]} — only runs within these
+#     months (1-12); any day inside that window is selectable, but with
+#     no known weekly cadence it's shown as TENTATIVE (Agustín confirms).
+#   - {'type': 'on_request'} — no real fixed schedule at all (its
+#     'availability' text just says "Consulta disponibilidad", or for
+#     pesca-yate-cancun that field actually holds a pickup point, not
+#     days): any future date is selectable but always TENTATIVE.
 TOURS = [
     {
         'slug': 'chichen-itza', 'category': 'ruinas', 'photo': 'chichen-itza.jpg',
         'name': 'Chichén Itzá – Historia, Naturaleza y Cultura',
         'desc': 'Guía certificado, cenote Oxman y tiempo libre en Valladolid, Pueblo Mágico.',
         'long_desc': "Descubre la grandeza de Chichén Itzá con un guía certificado, refréscate en el impresionante cenote Oxman y explora las calles coloridas de Valladolid, un Pueblo Mágico lleno de historia y tradición.",
-        'duration': '12 horas aprox.', 'availability': 'Consulta disponibilidad',
+        'duration': '12 horas aprox.', 'availability': 'Diario',
+        'schedule': {'type': 'daily'},
         'includes': ['Transportación redonda', 'Entrada a Chichén Itzá + tiempo libre', 'Recorrido con guía certificado',
                      "Ticket de entrada al cenote Oxman + chaleco salvavidas", 'Comida buffet con platillos típicos y 1 bebida no alcohólica',
                      'Tiempo libre en Valladolid'],
@@ -90,7 +109,8 @@ TOURS = [
         'name': 'Chichén Itzá Plus – Historia, Naturaleza y Cultura en un Solo Día',
         'desc': 'Una de las 7 Maravillas del Mundo + 2 cenotes y comida buffet en hacienda.',
         'long_desc': "Descubre una de las 7 Maravillas del Mundo acompañado por un guía experto. Refréscate en los impresionantes cenotes Suytún e Ik'kil y disfruta de una comida buffet en una hermosa hacienda. Un día lleno de historia, cultura y naturaleza.",
-        'duration': '12 horas aprox.', 'availability': 'Consulta disponibilidad',
+        'duration': '12 horas aprox.', 'availability': 'Diario',
+        'schedule': {'type': 'daily'},
         'includes': ['Transportación redonda', 'Visita guiada en Chichén Itzá', 'Tiempo libre en la zona arqueológica',
                      'Ticket de entrada a cenote Suytún', "Ticket de entrada a cenote Ik'kil",
                      'Comida buffet (incluye 1 bebida no alcohólica)', 'Tiempo libre en Valladolid'],
@@ -103,6 +123,7 @@ TOURS = [
         'desc': 'Visita guiada a las ruinas de Tulum, frente al mar. Entrada, guía certificado y tiempo libre para fotos.',
         'long_desc': "Visita guiada a las ruinas de Tulum, uno de los sitios arqueológicos más impactantes de la Riviera. Ideal para amantes de la historia y paisajes únicos.",
         'duration': '2.5 horas aprox.', 'availability': 'Diario',
+        'schedule': {'type': 'daily'},
         'includes': ['Entrada al sitio arqueológico', 'Recorrido con guía certificado', 'Tiempo libre para fotos'],
         'tax': 'Impuesto federal (no incluido): $265 MXN, se paga directo en el sitio', 'note': None,
         'pricing': {'type': 'per_person', 'price': 55},
@@ -113,6 +134,7 @@ TOURS = [
         'desc': 'Ruinas de Tulum con guía certificado + los 4 cenotes de Casa Tortuga.',
         'long_desc': "Explora las imponentes ruinas de Tulum con un guía certificado y sumérgete en los mágicos Cenotes Casa Tortuga, rodeados de naturaleza.",
         'duration': '8 horas aprox.', 'availability': 'Consulta disponibilidad',
+        'schedule': {'type': 'on_request'},
         'includes': ['Transportación redonda', 'Entrada y recorrido guiado en Tulum',
                      'Visita a los 4 cenotes de Casa Tortuga (Dorca, Wisho, Tres Zapotes y Campana)',
                      'Tiempo libre para nadar', 'Comida típica mexicana'],
@@ -125,6 +147,7 @@ TOURS = [
         'desc': 'Zona arqueológica de Tulum + snorkel con tortugas en Akumal.',
         'long_desc': "Descubre la magia de Tulum, una de las zonas arqueológicas más impresionantes, y vive la emoción de nadar con tortugas en Akumal. Una experiencia única que combina cultura e interacción con la vida marina.",
         'duration': '8 horas aprox.', 'availability': 'Martes a domingo',
+        'schedule': {'type': 'weekly', 'days': [0, 2, 3, 4, 5, 6]},
         'includes': ['Transportación redonda', 'Entrada y recorrido guiado en Tulum', 'Tiempo libre en la zona arqueológica',
                      'Snorkel con tortugas en Akumal', 'Equipo completo de snorkel y chaleco salvavidas',
                      'Guía especializado durante la actividad', 'Comida (bebidas no incluidas)'],
@@ -138,6 +161,7 @@ TOURS = [
         'desc': 'Cobá sin multitudes, cenote Choo Ha y ritual maya en aldea local.',
         'long_desc': "Descubre Cobá después de las multitudes, explora su impresionante zona arqueológica y refréscate en el cenote Choo Ha. Además, vive un ritual maya auténtico en una aldea local.",
         'duration': '6 horas aprox.', 'availability': 'Lunes, miércoles y sábados',
+        'schedule': {'type': 'weekly', 'days': [1, 3, 6]},
         'includes': ['Transportación redonda', 'Entrada y tiempo libre en Cobá', 'Entrada y nado en el cenote Choo Ha',
                      'Comida buffet con platillos típicos', 'Visita a una aldea maya con ritual de purificación'],
         'tax': 'Impuesto de Cobá (no incluido): $330 MXN, se paga directo en el sitio', 'note': None,
@@ -149,6 +173,7 @@ TOURS = [
         'desc': 'Ojo de agua de Yalahau, Isla de la Pasión y calles coloridas de Holbox.',
         'long_desc': "Explora Holbox, un paraíso de arenas blancas y aguas cristalinas. Nada en el refrescante ojo de agua de Yalahau, descubre la belleza de la Isla de la Pasión y recorre las coloridas calles de Holbox en bicicleta o a pie.",
         'duration': '10 horas aprox.', 'availability': 'Lunes, miércoles y viernes',
+        'schedule': {'type': 'weekly', 'days': [1, 3, 5]},
         'includes': ['Transportación redonda', 'Box lunch', 'Bebidas a bordo', 'Comida a la carta + 1 bebida no alcohólica',
                      'Alquiler de bicicleta (1 hora)', 'Nado en el ojo de agua de Yalahau', 'Visita a la Isla de la Pasión',
                      'Tiempo libre en Holbox'],
@@ -161,6 +186,7 @@ TOURS = [
         'desc': 'Snorkel en Isla Contoy y tiempo libre en Isla Mujeres, con comida regional.',
         'long_desc': "Descubre dos joyas del Caribe en un solo día. Explora la hermosa Isla Contoy, un paraíso virgen ideal para los amantes de la naturaleza. Nada en sus aguas cristalinas y relájate con tiempo libre en Isla Mujeres.",
         'duration': '8 horas aprox.', 'availability': 'Martes, jueves y domingos',
+        'schedule': {'type': 'weekly', 'days': [0, 2, 4]},
         'includes': ['Transportación redonda', 'Paseo en bote', 'Snorkel en Isla Contoy (equipo incluido)',
                      'Tiempo libre en Isla Contoy e Isla Mujeres', 'Bebidas a bordo', 'Comida regional (pollo o pescado a la Tikinxic)'],
         'tax': 'Impuesto federal (no incluido): USD 23 ($360 MXN)', 'note': None,
@@ -173,6 +199,7 @@ TOURS = [
         'desc': 'Catamarán con barra libre, snorkel en arrecife y club de playa con buffet.',
         'long_desc': "Disfruta de un día increíble navegando hacia Isla Mujeres en un catamarán con barra libre, música y las mejores vibras. Haz snorkel en un arrecife, relájate en un club de playa con buffet y explora el encantador centro de la isla.",
         'duration': '8 horas aprox.', 'availability': 'Diario',
+        'schedule': {'type': 'daily'},
         'includes': ['Transportación redonda', 'Paseo en catamarán', 'Club de playa con camastros', 'Comida buffet',
                      'Barra libre (a bordo y en el club de playa)', 'Snorkel en arrecife (equipo incluido)',
                      'Spinnaker (según clima)', 'Tiempo libre en Isla Mujeres'],
@@ -186,6 +213,7 @@ TOURS = [
         'desc': 'Cenotes Negro, Cocalitos y Esmeralda, Isla de los Pájaros y Canal de los Piratas.',
         'long_desc': "Explora la espectacular Laguna de Bacalar a bordo de una lancha y maravíllate con sus aguas cristalinas y vibrantes tonos azules. Nada en cenotes subacuáticos, visita la Isla de los Pájaros y navega por el legendario Canal de los Piratas.",
         'duration': '10 horas aprox.', 'availability': 'Martes, jueves y sábados',
+        'schedule': {'type': 'weekly', 'days': [2, 4, 6]},
         'includes': ['Transportación redonda', 'Paseo en lancha', 'Visita a Cenote Negro, Cenote Cocalitos y Cenote Esmeralda',
                      'Isla de los Pájaros', 'Canal de los Piratas', 'Comida a la carta (pollo o pescado) + 1 bebida no alcohólica'],
         'tax': None, 'note': 'No permite cancelaciones una vez reservada la fecha',
@@ -197,6 +225,7 @@ TOURS = [
         'desc': 'Catamarán exclusivo con paradas de snorkel en El Cielo, El Cielito y Chankanaab.',
         'long_desc': "Explorá Cozumel en un catamarán exclusivo. Paradas para snorkel en El Cielo, El Cielito y Chankanaab, más alimentos y bebidas incluidos. Una experiencia VIP sobre el mar turquesa.",
         'duration': '7 horas aprox.', 'availability': 'Diario',
+        'schedule': {'type': 'daily'},
         'includes': ['Paseo en catamarán de 5 horas', 'Snorkel en 3 paradas (El Cielo, El Cielito y Chankanaab)',
                      'Alimentos y bebidas a bordo', 'Equipo de snorkel incluido'],
         'tax': 'No incluye ferry a Cozumel: USD 30 viaje redondo aprox.', 'note': None,
@@ -209,6 +238,7 @@ TOURS = [
         'desc': 'Nadá junto al pez más grande del mundo. Tour 100% regulado y guías certificados.',
         'long_desc': "Viví la experiencia única de nadar junto al pez más grande del mundo. Tour 100% regulado y seguro, con guías certificados y equipo profesional.",
         'duration': '8 horas aprox.', 'availability': 'Junio a septiembre',
+        'schedule': {'type': 'seasonal', 'months': [6, 7, 8, 9]},
         'includes': ['Transportación desde Playa del Carmen', 'Lancha rápida hasta el área de avistamiento',
                      'Equipo completo de snorkel', 'Guía certificado', 'Box lunch y bebidas'],
         'tax': None, 'note': 'No apto para embarazadas',
@@ -221,6 +251,7 @@ TOURS = [
         'desc': 'Cuatrimoto por la selva y cenotes Jaguar, Alux y Nohoch.',
         'long_desc': "Siente la adrenalina al recorrer la selva en cuatrimoto y explora los impresionantes cenotes Jaguar, Alux y Nohoch. Un tour perfecto para los amantes de la aventura y la naturaleza.",
         'duration': '4 horas aprox.', 'availability': 'Diario',
+        'schedule': {'type': 'daily'},
         'includes': ['Transportación redonda', 'Recorrido en cuatrimoto (sencilla o doble)', 'Nado en el cenote Alux',
                      'Visita a la caverna de Nohoch', 'Exploración del cenote Jaguar', 'Snack para recargar energía'],
         'tax': None, 'note': 'No admite infantes · llevar ropa cómoda, traje de baño y calzado cerrado',
@@ -235,6 +266,7 @@ TOURS = [
         'desc': 'Nado con tortugas en Akumal y Cenote Nohoch, con zona de hamacas.',
         'long_desc': "Explora Akumal, una de las pocas playas hoy libres de sargazo, donde podrás nadar con tortugas marinas en aguas claras y turquesas, y luego disfruta de la belleza del Cenote Nohoch, una caverna mística con aguas cristalinas, zona de descanso con hamacas y un buffet regional delicioso.",
         'duration': '7-8 horas aprox.', 'availability': 'Consulta disponibilidad',
+        'schedule': {'type': 'on_request'},
         'includes': ['Transportación redonda', 'Snorkel guiado con tortugas en Akumal', 'Equipo de snorkel incluido',
                      'Entrada al Cenote Nohoch', 'Acceso a zona de hamacas y descanso', 'Comida buffet regional'],
         'tax': None, 'note': 'Actividad sujeta a condiciones del mar, cupos limitados',
@@ -247,6 +279,7 @@ TOURS = [
         'desc': 'Snorkel guiado con tortugas en su hábitat natural y tiempo libre en la playa.',
         'long_desc': "Vive una experiencia inolvidable nadando con tortugas en su hábitat natural en Akumal. Un guía experto te acompañará en el recorrido y luego podrás relajarte en la playa.",
         'duration': '2 a 4 horas aprox. (turno 1: 7:50-11h · turno 2: 10-14h)', 'availability': 'Martes a domingo',
+        'schedule': {'type': 'weekly', 'days': [0, 2, 3, 4, 5, 6]},
         'includes': ['Transportación ida y vuelta', 'Equipo de snorkel', 'Guía durante el recorrido', 'Chaleco salvavidas',
                      'Tiempo libre en la playa', 'Impuestos incluidos'],
         'tax': None, 'note': None,
@@ -259,6 +292,7 @@ TOURS = [
         'desc': 'Los 4 cenotes de Casa Tortuga (Wisho, Campana, Tres Zapotes y Dorca).',
         'long_desc': "Descubrí la magia de Casa Tortuga: cuatro cenotes únicos rodeados de naturaleza, ideales para nadar y explorar. Elegí la opción que mejor se adapte a tu plan, desde una visita corta hasta el paquete completo con transporte, tirolesas y comida.",
         'duration': 'Variable según opción', 'availability': 'Diario',
+        'schedule': {'type': 'daily'},
         'includes': ['Entrada a los 4 cenotes (Wisho, Campana, Tres Zapotes y Dorca)',
                      'Tiempo libre para nadar y explorar',
                      'Con Plus: transportación redonda desde Playa del Carmen, tirolesas y comida típica mexicana'],
@@ -275,6 +309,12 @@ TOURS = [
         'desc': 'Salidas en yate privado desde Cancún, con capitán y tripulación experta.',
         'long_desc': "Sal a pescar a bordo de un yate de 33 pies con capitán y tripulación experta, equipo de pesca profesional y todo lo necesario para vivir una aventura completa en altamar. Máximo 7 pasajeros por salida.",
         'duration': 'Según duración elegida', 'availability': 'Salida: Marina Kaybal, Z.H. Cancún',
+        # Confirmed by Agustín (2026-09-10): on_request all year, no fixed
+        # days — but with its own reason (boat/weather/logistics), not the
+        # generic "no fixed weekly schedule" wording used for the other
+        # on_request tours, hence the custom schedule_note below.
+        'schedule': {'type': 'on_request'},
+        'schedule_note': 'Agustín confirma disponibilidad según yate, clima y logística.',
         'includes': ['Tripulación experta (capitán y marineros)', 'Equipo profesional (8 cañas, carretes, buscador de peces, señuelos)',
                      'Licencias de pesca deportiva', 'Bebidas a bordo (aguas, refrescos, cervezas y hielo)', 'Snacks ligeros',
                      'Equipo de seguridad (chalecos y botiquín)', 'Áreas de descanso con sombra', 'Equipo de snorkel y toallas'],
@@ -804,7 +844,11 @@ def render_tour_page(tour):
 </section>
 '''
 
-    pricing_json = json.dumps(dict(tour['pricing'], name=tour['name']), ensure_ascii=False)
+    pricing_json = json.dumps(dict(
+        tour['pricing'], name=tour['name'],
+        schedule=tour['schedule'],
+        scheduleNote=tour.get('schedule_note'),
+    ), ensure_ascii=False)
 
     body = render_nav() + f'''
 <section class="reveal">
