@@ -22,6 +22,10 @@ SNORKEL_AGE_NOTE = 'Para hacer snorkel: edad mínima 8 años, edad máxima 65 a�
 
 INSTAGRAM_URL = 'https://www.instagram.com/mundocaribetours'
 GOOGLE_MAPS_URL = 'https://share.google/n1J6T9x87tUbbPaJm'
+# Direct link for the "Reseñas reales" section on the home (Ver todas las
+# reseñas en Google →) — the exact URL supplied for that section, kept
+# separate from GOOGLE_MAPS_URL (used elsewhere for the general listing).
+GOOGLE_REVIEWS_URL = 'https://maps.app.goo.gl/qujMgBHTCgYXxWCr9'
 FACEBOOK_URL = 'https://www.facebook.com/people/Mundo-Caribe-Tours/61569544733150/'
 # For travelers planning ahead (trip ~1-3 months out) who aren't ready to
 # book specific dates/headcounts via the WhatsApp widget yet — a lighter
@@ -841,6 +845,68 @@ def render_agustin_stories():
 
 
 # ---------------------------------------------------------------------------
+# GOOGLE REVIEWS (home, between "Nuestros tours más pedidos" and "Servicios
+# especiales"). Only real, verifiable reviews from the business's Google
+# listing — no invented names, text, ratings, dates, photos or count.
+# Avatars are sober initials, never a Google profile photo.
+# ---------------------------------------------------------------------------
+
+REVIEWS = [
+    {
+        'name': 'Milagro Martinez', 'initials': 'MM',
+        'text': 'Muchas gracias por estas increibles vacaiones!!! Todo muy profesional y tal cual como lo imaginas !! Definitivamemte volveremos a contratar sus servicios !',
+    },
+    {
+        'name': 'Micaela Benitez', 'initials': 'MB',
+        'text': 'Muy buena atención, predisposición y servicio de parte de Mundo Caribe Tours. Es super importante poder contar con proveedores de suma confianza a la hora de recomendarles servicios a pasajeros.',
+    },
+    {
+        'name': 'Matías Van Asten', 'initials': 'MV',
+        'text': 'Conocí islas mujeres, una experiencia impresionante',
+    },
+]
+
+
+def render_reviews_section():
+    """Native review cards (not a Google Maps screenshot/iframe/widget) —
+    same card look as .tour-card, own continuous-loop carousel (see
+    .review-carousel-wrap in site.css / initReviewsCarousel in site.js).
+    All 5 verified reviews are 5-star; the count/score shown next to the
+    title (5.0 · 5 opiniones) matches what's verified, not an estimate."""
+    def render_review_card(item):
+        return f'''<div class="tour-card review-card">
+        <div class="review-stars" role="img" aria-label="Calificación: 5 de 5 estrellas">★★★★★</div>
+        <p class="review-quote">“{item['text']}”</p>
+        <div class="review-footer">
+          <span class="review-avatar" aria-hidden="true">{item['initials']}</span>
+          <div>
+            <span class="review-name">{item['name']}</span>
+            <span class="review-source">Reseña de Google</span>
+          </div>
+        </div>
+      </div>'''
+
+    cards_html = ''.join(render_review_card(r) for r in REVIEWS)
+
+    return f'''<section id="resenas" class="reveal">
+  <div class="container">
+    <div class="section-head">
+      <p class="eyebrow">Reseñas reales</p>
+      <h2>Lo cuentan quienes ya vivieron el Caribe</h2>
+      <p>Experiencias reales de viajeros que eligieron Mundo Caribe Tours.</p>
+      <p class="review-summary"><span aria-hidden="true">★</span> 5.0 en Google · 5 opiniones</p>
+      <a class="btn-secondary review-cta" href="{GOOGLE_REVIEWS_URL}" target="_blank" rel="noopener noreferrer">Ver todas las reseñas en Google →</a>
+    </div>
+    <div class="review-carousel-wrap">
+      <div class="review-carousel">
+        {cards_html}
+      </div>
+    </div>
+  </div>
+</section>'''
+
+
+# ---------------------------------------------------------------------------
 # FAQ (home, between "Servicios especiales" and contacto)
 # ---------------------------------------------------------------------------
 
@@ -989,6 +1055,9 @@ def render_home():
     {featured_row}
   </div>
 </section>
+
+{render_reviews_section()}
+
 <section class="reveal">
   <div class="container">
     <div class="section-head">

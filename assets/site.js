@@ -959,6 +959,7 @@
     initContactForm();
     initAgustinStories();
     initFaq();
+    initReviewsCarousel();
   });
 
   // ---------- FAQ accordion (home) ----------
@@ -1196,6 +1197,49 @@
 
       window.addEventListener('resize', measure);
     });
+  }
+
+  // ===========================================================================
+  // GOOGLE REVIEWS CAROUSEL (home) — continuous, pausable, infinite loop
+  // ===========================================================================
+  //
+  // Different in spirit from the drag carousel above: this one scrolls on
+  // its own, slowly, and pauses on hover/focus/touch instead of reacting
+  // to a drag gesture. .review-carousel-wrap is a plain overflow-x:auto
+  // row by default (trackpad, touch swipe and drag all just work, no JS
+  // needed for that part) — this only adds the auto-scroll loop on top
+  // when motion is allowed, by cloning the real cards once (never the
+  // underlying images/data) and animating via CSS (see .review-carousel-
+  // scroll in site.css). Reduced motion: no clones, no animation, the
+  // row stays a manual scroller with the real cards only.
+
+  function initReviewsCarousel() {
+    var wrap = document.querySelector('.review-carousel-wrap');
+    if (!wrap) return;
+    var track = wrap.querySelector('.review-carousel');
+    if (!track) return;
+    var reduce = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+    if (reduce) return;
+
+    var originalCards = Array.prototype.slice.call(track.children);
+    if (originalCards.length < 2) return; // nothing meaningful to loop
+
+    var clonesFrag = document.createDocumentFragment();
+    originalCards.forEach(function (card) {
+      var clone = card.cloneNode(true);
+      clone.setAttribute('aria-hidden', 'true');
+      clonesFrag.appendChild(clone);
+    });
+    track.appendChild(clonesFrag);
+    wrap.classList.add('is-looping');
+
+    // Touch doesn't have a ":hover" state to pause the animation (CSS
+    // already handles hover/focus-within) — this covers touch explicitly.
+    var pause = function () { wrap.classList.add('is-touching'); };
+    var resume = function () { wrap.classList.remove('is-touching'); };
+    wrap.addEventListener('touchstart', pause, { passive: true });
+    wrap.addEventListener('touchend', resume);
+    wrap.addEventListener('touchcancel', resume);
   }
 
   // ===========================================================================
