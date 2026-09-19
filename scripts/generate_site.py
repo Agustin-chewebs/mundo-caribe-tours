@@ -14,7 +14,7 @@ import json
 import urllib.parse
 
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-BASE_URL = 'https://mundo-caribe-tours.ignacioagustindannunzio.workers.dev'
+BASE_URL = 'https://mundocaribetours.chewebs.com'
 WA_NUMBER = '529841191147'
 
 GENERAL_AGE_NOTE = 'Edades: infantes de 0 a 2 años (sin cargo), niños de 3 a 9 años, adultos desde 10 años en adelante.'
@@ -907,6 +907,33 @@ def render_reviews_section():
 
 
 # ---------------------------------------------------------------------------
+# TRAVELAGENCY STRUCTURED DATA (home) — only fields backed by real data
+# already in this file (name, URLs, WA_NUMBER, Playa del Carmen). No
+# streetAddress, no openingHours, no aggregateRating/reviewCount/
+# priceRange: none of that is real data we have, and estimating it is a
+# Google penalization risk.
+# ---------------------------------------------------------------------------
+
+def render_travel_agency_jsonld():
+    telephone = '+52 ' + WA_NUMBER[2:5] + ' ' + WA_NUMBER[5:8] + ' ' + WA_NUMBER[8:]
+    data = {
+        '@context': 'https://schema.org',
+        '@type': 'TravelAgency',
+        'name': 'Mundo Caribe Tours',
+        'url': BASE_URL,
+        'telephone': telephone,
+        'address': {
+            '@type': 'PostalAddress',
+            'addressLocality': 'Playa del Carmen',
+            'addressRegion': 'Quintana Roo',
+            'addressCountry': 'MX',
+        },
+        'sameAs': [INSTAGRAM_URL, FACEBOOK_URL, GOOGLE_MAPS_URL],
+    }
+    return f'<script type="application/ld+json">{json.dumps(data, ensure_ascii=False)}</script>'
+
+
+# ---------------------------------------------------------------------------
 # FAQ (home, between "Servicios especiales" and contacto)
 # ---------------------------------------------------------------------------
 
@@ -1069,6 +1096,8 @@ def render_home():
 </section>
 
 {render_faq_section()}
+
+{render_travel_agency_jsonld()}
 ''' + render_footer()
 
     write_file('index.html', page_shell(head, body))
@@ -1322,6 +1351,40 @@ def render_guide_page(guide):
 
 
 # ---------------------------------------------------------------------------
+# SITEMAP & ROBOTS.TXT
+# ---------------------------------------------------------------------------
+
+def sitemap_paths():
+    """Every real URL the generator emits, built from the same source lists
+    as the pages themselves (CATEGORIES, TOURS, GUIDES) so it can never drift
+    out of sync when a tour/category/guide is added or removed. No lastmod
+    or priority: we don't have real per-page dates, and guessing them is
+    worse than omitting them."""
+    paths = ['/', '/todos-los-tours/', '/guias/']
+    paths += [f'/categoria/{c["slug"]}/' for c in CATEGORIES]
+    paths += [f'/tour/{t["slug"]}/' for t in TOURS]
+    paths += [f'/guias/{g["slug"]}/' for g in GUIDES]
+    return paths
+
+
+def render_sitemap():
+    urls_xml = ''.join(f'  <url><loc>{BASE_URL}{p}</loc></url>\n' for p in sitemap_paths())
+    xml = ('<?xml version="1.0" encoding="UTF-8"?>\n'
+           '<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n'
+           f'{urls_xml}'
+           '</urlset>\n')
+    write_file('sitemap.xml', xml)
+
+
+def render_robots():
+    robots = ('User-agent: *\n'
+              'Allow: /\n'
+              '\n'
+              f'Sitemap: {BASE_URL}/sitemap.xml\n')
+    write_file('robots.txt', robots)
+
+
+# ---------------------------------------------------------------------------
 # MAIN
 # ---------------------------------------------------------------------------
 
@@ -1335,7 +1398,9 @@ def main():
     render_guides_index()
     for guide in GUIDES:
         render_guide_page(guide)
-    print(f'Generated: 1 home + {len(CATEGORIES)} category pages + {len(TOURS)} tour pages + 1 all-tours page + 1 guides index + {len(GUIDES)} guide pages')
+    render_sitemap()
+    render_robots()
+    print(f'Generated: 1 home + {len(CATEGORIES)} category pages + {len(TOURS)} tour pages + 1 all-tours page + 1 guides index + {len(GUIDES)} guide pages + sitemap.xml + robots.txt')
 
 
 if __name__ == '__main__':
