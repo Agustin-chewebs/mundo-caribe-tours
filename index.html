@@ -226,9 +226,11 @@
       <p class="review-summary"><span aria-hidden="true">★</span> 5.0 en Google · 5 opiniones</p>
       <a class="btn-secondary review-cta" href="https://maps.app.goo.gl/qujMgBHTCgYXxWCr9" target="_blank" rel="noopener noreferrer">Ver todas las reseñas en Google →</a>
     </div>
-    <div class="review-carousel-wrap">
-      <div class="review-carousel">
-        <div class="tour-card review-card">
+    <div class="review-carousel-outer">
+      <button type="button" class="review-carousel-arrow review-carousel-arrow-prev" id="review-carousel-prev" aria-label="Reseña anterior">‹</button>
+      <div class="review-carousel-wrap" id="review-carousel-wrap" tabindex="0" role="group" aria-roledescription="carrusel" aria-label="Reseñas de clientes">
+        <div class="review-carousel">
+          <div class="tour-card review-card">
         <div class="review-stars" role="img" aria-label="Calificación: 5 de 5 estrellas">★★★★★</div>
         <p class="review-quote">“Muchas gracias por estas increibles vacaiones!!! Todo muy profesional y tal cual como lo imaginas !! Definitivamemte volveremos a contratar sus servicios !”</p>
         <div class="review-footer">
@@ -259,7 +261,9 @@
           </div>
         </div>
       </div>
+        </div>
       </div>
+      <button type="button" class="review-carousel-arrow review-carousel-arrow-next" id="review-carousel-next" aria-label="Siguiente reseña">›</button>
     </div>
   </div>
 </section>
