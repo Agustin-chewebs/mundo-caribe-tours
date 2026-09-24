@@ -143,6 +143,48 @@ section { padding: var(--space-6) 0; }
 .tour-card .tour-link { display: inline-block; margin-top: var(--space-2); font-size: 0.82rem; color: var(--teal-deep); font-weight: 500; border: none; border-bottom: 1.5px solid var(--teal-mid); padding: 0 0 2px 0; background: none; font-family: inherit; cursor: pointer; align-self: flex-start; }
 .quote-badge { display: inline-block; margin-top: var(--space-2); font-size: 0.72rem; font-weight: 600; text-transform: uppercase; letter-spacing: 0.04em; color: var(--teal-mid); background: rgba(63,133,119,0.1); padding: 4px 10px; border-radius: 999px; align-self: flex-start; }
 
+/* ---------- Google reviews (home) ---------- */
+/* Discreet rating line near the section title — same idea as .hero-signal
+   (small icon + text), kept as its own class since it lives in a
+   different section. */
+.review-summary { display: flex; align-items: center; gap: 6px; margin-top: var(--space-2); font-size: 0.85rem; color: var(--teal-mid); font-weight: 500; }
+.review-cta { margin-top: var(--space-3); }
+
+/* Same native-scrollLeft technique as .tour-carousel-wrap (real scroll
+   position, triple clone set for a silent infinite loop) — see
+   initReviewsCarousel in site.js. A requestAnimationFrame loop nudges
+   scrollLeft forward on its own; drag, touch, arrows and keyboard all
+   move that same scrollLeft, so pausing/resuming the autoplay is never a
+   jump. user-select:none avoids the browser starting a text selection
+   mid-drag (a real risk here, since review cards are full of quoted text). */
+.review-carousel-outer { position: relative; display: flex; align-items: center; gap: var(--space-2); }
+.review-carousel-wrap { flex: 1; overflow-x: auto; overflow-y: hidden; -webkit-overflow-scrolling: touch; scrollbar-width: none; margin: 0 calc(-1 * var(--space-3)); padding: 4px var(--space-3) var(--space-2); cursor: grab; user-select: none; }
+.review-carousel-wrap::-webkit-scrollbar { display: none; }
+.review-carousel-wrap.dragging { cursor: grabbing; }
+.review-carousel-wrap.dragging .tour-card { pointer-events: none; }
+.review-carousel-wrap:focus-visible { outline: 2px solid var(--teal-mid); outline-offset: 2px; }
+.review-carousel { display: flex; gap: var(--space-3); }
+.review-carousel .tour-card { flex: 0 0 280px; }
+.review-carousel-arrow { flex: none; width: 36px; height: 36px; border-radius: 50%; border: 1.5px solid rgba(28,74,68,0.18); background: #fff; color: var(--teal-deep); font-size: 1.3rem; line-height: 1; cursor: pointer; display: flex; align-items: center; justify-content: center; transition: border-color 0.15s ease, background 0.15s ease; }
+.review-carousel-arrow:hover { border-color: var(--teal-mid); background: rgba(63,133,119,0.08); }
+.review-carousel-arrow:focus-visible { outline: 2px solid var(--teal-mid); outline-offset: 2px; }
+@media (max-width: 640px) {
+  /* Arrows step aside on narrow screens — swipe/drag is the primary
+     interaction there and the row needs the full width. */
+  .review-carousel-arrow { display: none; }
+}
+
+/* Tarjeta de reseña: mismo look que .tour-card (fondo, borde, radio,
+   sombra) pero sin el efecto hover "elevado" — estas tarjetas no son
+   links, así que no deben sugerir que se puede hacer click. */
+.review-card:hover { transform: none; box-shadow: 0 1px 2px rgba(18,48,44,0.04); }
+.review-stars { color: #d88c34; font-size: 0.95rem; letter-spacing: 3px; }
+.review-quote { margin-top: var(--space-2); font-size: 0.92rem; color: rgba(18,48,44,0.78); flex: 1; display: -webkit-box; -webkit-line-clamp: 6; -webkit-box-orient: vertical; overflow: hidden; }
+.review-footer { display: flex; align-items: center; gap: 10px; margin-top: var(--space-3); }
+.review-avatar { flex: none; width: 36px; height: 36px; border-radius: 50%; background: rgba(63,133,119,0.14); color: var(--teal-deep); font-weight: 600; font-size: 0.8rem; display: flex; align-items: center; justify-content: center; }
+.review-name { display: block; font-size: 0.86rem; font-weight: 600; color: var(--teal-deep); }
+.review-source { display: block; font-size: 0.74rem; color: rgba(18,48,44,0.55); }
+
 /* ---------- category page header ---------- */
 .category-hero { padding: var(--space-5) 0 var(--space-4); }
 .category-hero h1 { font-size: clamp(1.9rem, 3.6vw, 2.8rem); }
@@ -210,11 +252,35 @@ section { padding: var(--space-6) 0; }
 .mc-dp-day.selected { background: var(--teal-deep); color: #fff; }
 .mc-dp-blocked-msg { margin-top: 8px; font-size: 0.78rem; color: #b0473f; font-weight: 600; }
 .tier-options { display: flex; flex-direction: column; gap: 8px; }
+/* .booking-field label {text-transform:uppercase} also matches these —
+   they're <label> elements too, just nested one level deeper — so this
+   needs to win on specificity, not just come later in the file. */
+.booking-field .tier-option, .booking-field .payment-group-option { text-transform: none; }
 .tier-option { display: flex; align-items: center; justify-content: space-between; gap: var(--space-2); border: 1.5px solid rgba(28,74,68,0.14); border-radius: 10px; padding: 10px 12px; cursor: pointer; font-size: 0.88rem; transition: border-color 0.15s ease, background 0.15s ease; }
 .tier-option:hover { border-color: var(--teal-mid); }
 .tier-option.selected { border-color: var(--teal-mid); background: rgba(63,133,119,0.08); }
 .tier-option input { accent-color: var(--teal-mid); }
 .tier-option .tier-price { font-weight: 600; color: var(--teal-deep); white-space: nowrap; }
+
+/* ---------- payment method picker (pagar el día del tour / transferencia
+   / criptomonedas) — same "card" visual language as .tier-option above,
+   plus a badge for the featured/recommended group and a blurb line. ---------- */
+.payment-groups { display: flex; flex-direction: column; gap: 8px; }
+.payment-group-option { display: flex; flex-direction: column; gap: 4px; border: 1.5px solid rgba(28,74,68,0.14); border-radius: 10px; padding: 10px 12px; cursor: pointer; font-size: 0.88rem; transition: border-color 0.15s ease, background 0.15s ease; }
+.payment-group-option:hover { border-color: var(--teal-mid); }
+.payment-group-option.selected { border-color: var(--teal-mid); background: rgba(63,133,119,0.08); }
+.payment-group-option.featured { border-color: rgba(216,140,52,0.5); }
+.payment-group-option.featured.selected { border-color: #d88c34; background: rgba(216,140,52,0.08); }
+.payment-group-head { display: flex; align-items: center; gap: 8px; }
+.payment-group-head input { accent-color: var(--teal-mid); }
+.payment-group-badge { font-size: 0.66rem; font-weight: 700; text-transform: uppercase; letter-spacing: 0.03em; color: #fff; background: #d88c34; padding: 2px 8px; border-radius: 999px; }
+.payment-group-blurb { margin-left: 24px; font-size: 0.8rem; color: rgba(18,48,44,0.62); }
+.payment-groups.field-invalid .payment-group-option { border-color: #b0473f; }
+.payment-conditions { margin-top: 8px; padding-left: 18px; font-size: 0.8rem; color: rgba(18,48,44,0.65); }
+.payment-conditions li { margin-top: 4px; }
+#mc-payment-suboptions { margin-top: var(--space-2); }
+.mc-zone-supplement { color: var(--teal-mid); font-weight: 500; }
+.mc-cart-item-zone, .mc-zone-supplement { font-size: 0.78rem; }
 .counter-row { display: flex; align-items: center; justify-content: space-between; gap: var(--space-2); }
 .counter-row + .counter-row { margin-top: 10px; }
 .counter-label { font-size: 0.92rem; }

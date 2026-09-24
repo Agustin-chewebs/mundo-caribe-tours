@@ -5,7 +5,7 @@ _Última actualización: 2026-09-11, tras agregar la sección de FAQs en el home
 ## Último commit y estado del deploy
 
 - **Commit:** `a61300d` — "Agrega sección de FAQs en el home (entre Servicios especiales y contacto)" (rama `main`, subido a GitHub). Anterior: `217f435` (historias: sin overlap).
-- **Deploy:** `~/Desktop/mundo-caribe-cloudflare-deploy` actualizada y verificada (`id="faq"`, el JSON-LD `FAQPage` y `initFaq` presentes en el HTML/JS copiados), lista para arrastrar a Cloudflare — confirmar en vivo en `https://mundo-caribe-tours.ignacioagustindannunzio.workers.dev/` después de subirla. El deploy a Cloudflare **es manual**: no hay auto-deploy configurado desde GitHub todavía — cada cambio requiere regenerar (`python3 scripts/generate_site.py`), copiar `index.html`, `assets/`, `categoria/`, `tour/`, `todos-los-tours/` y `guias/` a esa carpeta, y arrastrarla a Cloudflare ("New deployment").
+- **Deploy:** `~/Desktop/mundo-caribe-cloudflare-deploy` actualizada y verificada (`id="faq"`, el JSON-LD `FAQPage` y `initFaq` presentes en el HTML/JS copiados), lista para arrastrar a Cloudflare — confirmar en vivo en `https://mundocaribetours.chewebs.com/` después de subirla. El deploy a Cloudflare **es manual**: no hay auto-deploy configurado desde GitHub todavía — cada cambio requiere regenerar (`python3 scripts/generate_site.py`), copiar `index.html`, `assets/`, `categoria/`, `tour/`, `todos-los-tours/` y `guias/` a esa carpeta, y arrastrarla a Cloudflare ("New deployment").
 - Netlify quedó pausado y desconectado de GitHub (decisión tomada por consumo de créditos); ya no es el host activo.
 
 ## Tabla final de disponibilidad (17 tours)

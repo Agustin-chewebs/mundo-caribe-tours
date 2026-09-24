@@ -14,7 +14,7 @@ import json
 import urllib.parse
 
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-BASE_URL = 'https://mundo-caribe-tours.ignacioagustindannunzio.workers.dev'
+BASE_URL = 'https://mundocaribetours.chewebs.com'
 WA_NUMBER = '529841191147'
 
 GENERAL_AGE_NOTE = 'Edades: infantes de 0 a 2 años (sin cargo), niños de 3 a 9 años, adultos desde 10 años en adelante.'
@@ -22,6 +22,10 @@ SNORKEL_AGE_NOTE = 'Para hacer snorkel: edad mínima 8 años, edad máxima 65 a�
 
 INSTAGRAM_URL = 'https://www.instagram.com/mundocaribetours'
 GOOGLE_MAPS_URL = 'https://share.google/n1J6T9x87tUbbPaJm'
+# Direct link for the "Reseñas reales" section on the home (Ver todas las
+# reseñas en Google →) — the exact URL supplied for that section, kept
+# separate from GOOGLE_MAPS_URL (used elsewhere for the general listing).
+GOOGLE_REVIEWS_URL = 'https://maps.app.goo.gl/qujMgBHTCgYXxWCr9'
 FACEBOOK_URL = 'https://www.facebook.com/people/Mundo-Caribe-Tours/61569544733150/'
 # For travelers planning ahead (trip ~1-3 months out) who aren't ready to
 # book specific dates/headcounts via the WhatsApp widget yet — a lighter
@@ -326,6 +330,20 @@ TOURS = [
     },
 ]
 TOUR_BY_SLUG = {t['slug']: t for t in TOURS}
+
+# Pickup-zone supplements (added 2026-09-24). All published prices already
+# assume pickup from Playa del Carmen / Playacar (zones 1-2: no supplement).
+# Zone 3 supplement is per-tour and ONLY applies to these 3 tours — every
+# other tour is unaffected in zone 3. Zone 4 is a flat per-person surcharge
+# on every tour EXCEPT pesca-yate-cancun, which has its own fixed pickup
+# point (Marina Kaybal) and was explicitly excluded from the pickup-zone
+# system by Agustín (2026-09-24) rather than treated as a hotel transfer.
+ZONE3_SURCHARGES_MXN = {
+    'isla-mujeres-catamaran': 250,
+    'isla-contoy-mujeres': 200,
+    'tiburon-ballena': 200,
+}
+ZONE_EXEMPT_SLUGS = {'pesca-yate-cancun'}
 
 # Quote-only items shown as cards on their category page, no dedicated page
 QUOTE_ITEMS = {
@@ -841,6 +859,99 @@ def render_agustin_stories():
 
 
 # ---------------------------------------------------------------------------
+# GOOGLE REVIEWS (home, between "Nuestros tours más pedidos" and "Servicios
+# especiales"). Only real, verifiable reviews from the business's Google
+# listing — no invented names, text, ratings, dates, photos or count.
+# Avatars are sober initials, never a Google profile photo.
+# ---------------------------------------------------------------------------
+
+REVIEWS = [
+    {
+        'name': 'Milagro Martinez', 'initials': 'MM',
+        'text': 'Muchas gracias por estas increibles vacaiones!!! Todo muy profesional y tal cual como lo imaginas !! Definitivamemte volveremos a contratar sus servicios !',
+    },
+    {
+        'name': 'Micaela Benitez', 'initials': 'MB',
+        'text': 'Muy buena atención, predisposición y servicio de parte de Mundo Caribe Tours. Es super importante poder contar con proveedores de suma confianza a la hora de recomendarles servicios a pasajeros.',
+    },
+    {
+        'name': 'Matías Van Asten', 'initials': 'MV',
+        'text': 'Conocí islas mujeres, una experiencia impresionante',
+    },
+]
+
+
+def render_reviews_section():
+    """Native review cards (not a Google Maps screenshot/iframe/widget) —
+    same card look as .tour-card, own continuous-loop carousel (see
+    .review-carousel-wrap in site.css / initReviewsCarousel in site.js).
+    All 5 verified reviews are 5-star; the count/score shown next to the
+    title (5.0 · 5 opiniones) matches what's verified, not an estimate."""
+    def render_review_card(item):
+        return f'''<div class="tour-card review-card">
+        <div class="review-stars" role="img" aria-label="Calificación: 5 de 5 estrellas">★★★★★</div>
+        <p class="review-quote">“{item['text']}”</p>
+        <div class="review-footer">
+          <span class="review-avatar" aria-hidden="true">{item['initials']}</span>
+          <div>
+            <span class="review-name">{item['name']}</span>
+            <span class="review-source">Reseña de Google</span>
+          </div>
+        </div>
+      </div>'''
+
+    cards_html = ''.join(render_review_card(r) for r in REVIEWS)
+
+    return f'''<section id="resenas" class="reveal">
+  <div class="container">
+    <div class="section-head">
+      <p class="eyebrow">Reseñas reales</p>
+      <h2>Lo cuentan quienes ya vivieron el Caribe</h2>
+      <p>Experiencias reales de viajeros que eligieron Mundo Caribe Tours.</p>
+      <p class="review-summary"><span aria-hidden="true">★</span> 5.0 en Google · 5 opiniones</p>
+      <a class="btn-secondary review-cta" href="{GOOGLE_REVIEWS_URL}" target="_blank" rel="noopener noreferrer">Ver todas las reseñas en Google →</a>
+    </div>
+    <div class="review-carousel-outer">
+      <button type="button" class="review-carousel-arrow review-carousel-arrow-prev" id="review-carousel-prev" aria-label="Reseña anterior">‹</button>
+      <div class="review-carousel-wrap" id="review-carousel-wrap" tabindex="0" role="group" aria-roledescription="carrusel" aria-label="Reseñas de clientes">
+        <div class="review-carousel">
+          {cards_html}
+        </div>
+      </div>
+      <button type="button" class="review-carousel-arrow review-carousel-arrow-next" id="review-carousel-next" aria-label="Siguiente reseña">›</button>
+    </div>
+  </div>
+</section>'''
+
+
+# ---------------------------------------------------------------------------
+# TRAVELAGENCY STRUCTURED DATA (home) — only fields backed by real data
+# already in this file (name, URLs, WA_NUMBER, Playa del Carmen). No
+# streetAddress, no openingHours, no aggregateRating/reviewCount/
+# priceRange: none of that is real data we have, and estimating it is a
+# Google penalization risk.
+# ---------------------------------------------------------------------------
+
+def render_travel_agency_jsonld():
+    telephone = '+52 ' + WA_NUMBER[2:5] + ' ' + WA_NUMBER[5:8] + ' ' + WA_NUMBER[8:]
+    data = {
+        '@context': 'https://schema.org',
+        '@type': 'TravelAgency',
+        'name': 'Mundo Caribe Tours',
+        'url': BASE_URL,
+        'telephone': telephone,
+        'address': {
+            '@type': 'PostalAddress',
+            'addressLocality': 'Playa del Carmen',
+            'addressRegion': 'Quintana Roo',
+            'addressCountry': 'MX',
+        },
+        'sameAs': [INSTAGRAM_URL, FACEBOOK_URL, GOOGLE_MAPS_URL],
+    }
+    return f'<script type="application/ld+json">{json.dumps(data, ensure_ascii=False)}</script>'
+
+
+# ---------------------------------------------------------------------------
 # FAQ (home, between "Servicios especiales" and contacto)
 # ---------------------------------------------------------------------------
 
@@ -989,6 +1100,9 @@ def render_home():
     {featured_row}
   </div>
 </section>
+
+{render_reviews_section()}
+
 <section class="reveal">
   <div class="container">
     <div class="section-head">
@@ -1000,6 +1114,8 @@ def render_home():
 </section>
 
 {render_faq_section()}
+
+{render_travel_agency_jsonld()}
 ''' + render_footer()
 
     write_file('index.html', page_shell(head, body))
@@ -1083,6 +1199,8 @@ def render_tour_page(tour):
         tour['pricing'], name=tour['name'],
         schedule=tour['schedule'],
         scheduleNote=tour.get('schedule_note'),
+        zoneExempt=tour['slug'] in ZONE_EXEMPT_SLUGS,
+        zone3SurchargeMXN=ZONE3_SURCHARGES_MXN.get(tour['slug']),
     ), ensure_ascii=False)
 
     body = render_nav() + f'''
@@ -1253,6 +1371,40 @@ def render_guide_page(guide):
 
 
 # ---------------------------------------------------------------------------
+# SITEMAP & ROBOTS.TXT
+# ---------------------------------------------------------------------------
+
+def sitemap_paths():
+    """Every real URL the generator emits, built from the same source lists
+    as the pages themselves (CATEGORIES, TOURS, GUIDES) so it can never drift
+    out of sync when a tour/category/guide is added or removed. No lastmod
+    or priority: we don't have real per-page dates, and guessing them is
+    worse than omitting them."""
+    paths = ['/', '/todos-los-tours/', '/guias/']
+    paths += [f'/categoria/{c["slug"]}/' for c in CATEGORIES]
+    paths += [f'/tour/{t["slug"]}/' for t in TOURS]
+    paths += [f'/guias/{g["slug"]}/' for g in GUIDES]
+    return paths
+
+
+def render_sitemap():
+    urls_xml = ''.join(f'  <url><loc>{BASE_URL}{p}</loc></url>\n' for p in sitemap_paths())
+    xml = ('<?xml version="1.0" encoding="UTF-8"?>\n'
+           '<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">\n'
+           f'{urls_xml}'
+           '</urlset>\n')
+    write_file('sitemap.xml', xml)
+
+
+def render_robots():
+    robots = ('User-agent: *\n'
+              'Allow: /\n'
+              '\n'
+              f'Sitemap: {BASE_URL}/sitemap.xml\n')
+    write_file('robots.txt', robots)
+
+
+# ---------------------------------------------------------------------------
 # MAIN
 # ---------------------------------------------------------------------------
 
@@ -1266,7 +1418,9 @@ def main():
     render_guides_index()
     for guide in GUIDES:
         render_guide_page(guide)
-    print(f'Generated: 1 home + {len(CATEGORIES)} category pages + {len(TOURS)} tour pages + 1 all-tours page + 1 guides index + {len(GUIDES)} guide pages')
+    render_sitemap()
+    render_robots()
+    print(f'Generated: 1 home + {len(CATEGORIES)} category pages + {len(TOURS)} tour pages + 1 all-tours page + 1 guides index + {len(GUIDES)} guide pages + sitemap.xml + robots.txt')
 
 
 if __name__ == '__main__':
