@@ -32,6 +32,12 @@
     { value: 'costa_mujeres', label: 'Costa Mujeres / Puerto Juárez / Isla Blanca' }
   ];
   var DEFAULT_ZONE = 'pdc_playacar';
+  // Shown right under the zone selector, both in the tour widget and in
+  // the cart — reassures a guest who isn't sure where their hotel falls
+  // that picking the default zone is a safe provisional choice: it never
+  // silently confirms the hotel IS in that zone, any real charge still
+  // gets confirmed by Agustín on WhatsApp before the booking proceeds.
+  var ZONE_HELP_NOTE = '¿No sabés en qué zona está tu hotel? Elegí Playa del Carmen / Playacar. Si corresponde un cargo adicional por ubicación, te lo vamos a avisar por WhatsApp y esperamos tu confirmación antes de seguir con la reserva.';
   var ZONE4_FLAT_SURCHARGE_MXN = 300;
 
   function getZone() {
@@ -109,12 +115,18 @@
     {
       key: 'transfer',
       label: 'Transferencia',
-      blurb: 'Te enviamos los datos y la cotización por WhatsApp para completar la transferencia.',
+      blurb: 'Podés pagar por transferencia en pesos mexicanos, dólares estadounidenses, pesos argentinos, pesos colombianos o euros. Te enviamos por WhatsApp los datos correspondientes y, cuando haga falta convertir la moneda, la cotización vigente del día.',
       conditions: [
         'Los datos para realizar la transferencia se enviarán por WhatsApp.',
-        'La cotización proporcionada será válida únicamente durante ese día.',
         'Para continuar con la reserva, el pago debe aparecer acreditado en el estado de cuenta del operador.',
         'El tour debe estar pagado al 100% antes de confirmar la reserva.'
+      ],
+      // Shown only when the chosen currency actually needs a quote (i.e.
+      // anything but transfer_mxn) — mentioning "cotización" next to MXN
+      // would be confusing since no conversion ever happens there.
+      quoteConditions: [
+        'La cotización proporcionada será válida únicamente durante ese día.',
+        'La cotización corresponde solo a la conversión de moneda — no es un cargo adicional sobre el precio del tour.'
       ],
       options: [
         { value: 'transfer_mxn', label: 'MXN — CLABE/SPEI', kind: 'mxn_final' },
@@ -315,7 +327,7 @@
     var mxnAmount = itemZoneSupplementMXN(item, zoneValue);
     if (!mxnAmount) return '';
     var pax = payingPax(item);
-    return '<div class="mc-cart-item-detail mc-zone-supplement">+ ' + mxn(mxnAmount) + ' de suplemento por zona de recogida (' + pax + (pax === 1 ? ' pasajero' : ' pasajeros') + ')</div>';
+    return '<div class="mc-cart-item-detail mc-zone-supplement">+ ' + mxn(mxnAmount) + ' de cargo adicional por ubicación (' + pax + (pax === 1 ? ' pasajero' : ' pasajeros') + ')</div>';
   }
 
   // "Today" as the calendar (Cancún/Riviera Maya, no DST) sees it — NOT the
@@ -667,12 +679,13 @@
 
     checkoutEl.innerHTML =
       '<div class="mc-cart-total-row"><span>Total</span><strong>' + formatPaymentTotal(combinedUsd, payment) + (hasQuote ? ' + ítems a cotizar' : '') + '</strong></div>' +
-      (totalSupplementMXN ? '<p class="mc-cart-persons">Incluye ' + mxn(totalSupplementMXN) + ' de suplemento por zona de recogida.</p>' : '') +
+      (totalSupplementMXN ? '<p class="mc-cart-persons">Incluye ' + mxn(totalSupplementMXN) + ' de cargo adicional por ubicación.</p>' : '') +
       (findPaymentOption(payment) && findPaymentOption(payment).option.kind === 'card_mxn' ? '<p class="mc-cart-persons">Incluye 5% de recargo por pago con tarjeta.</p>' : '') +
       (anyTentative ? '<p class="mc-cart-persons">⚠️ Uno o más tours tienen fecha tentativa — Agustín confirma disponibilidad por WhatsApp.</p>' : '') +
       '<div class="booking-field"><label for="mc-zone">Zona de recogida</label>' +
       zoneSelectHtml('mc-zone', zone) +
       '<p class="payment-note">Todos los precios publicados ya incluyen salida desde Playa del Carmen / Playacar.</p>' +
+      '<p class="payment-note mc-zone-help">' + ZONE_HELP_NOTE + '</p>' +
       '</div>' +
       '<div class="booking-field"><label for="mc-name">Nombre completo</label>' +
       '<input type="text" id="mc-name" placeholder="Nombre y apellido de quien reserva" value="' + name.replace(/"/g, '&quot;') + '"></div>' +
@@ -737,8 +750,10 @@
     var selectHtml = '<select id="mc-payment-option">' + group.options.map(function (o) {
       return '<option value="' + o.value + '"' + (o.value === validCurrent ? ' selected' : '') + '>' + o.label + '</option>';
     }).join('') + '</select>';
-    var conditionsHtml = group.conditions
-      ? '<ul class="payment-conditions">' + group.conditions.map(function (c) { return '<li>' + c + '</li>'; }).join('') + '</ul>'
+    var neededsQuote = group.key === 'transfer' && validCurrent !== 'transfer_mxn';
+    var allConditions = (group.conditions || []).concat(neededsQuote ? (group.quoteConditions || []) : []);
+    var conditionsHtml = allConditions.length
+      ? '<ul class="payment-conditions">' + allConditions.map(function (c) { return '<li>' + c + '</li>'; }).join('') + '</ul>'
       : '';
     var noteHtml = paymentNote(validCurrent) ? '<p class="payment-note">' + paymentNote(validCurrent) + '</p>' : '';
     // Selecting a group with no prior valid selection in it silently
@@ -802,6 +817,7 @@
       '<p><strong>Nombre:</strong> ' + name + '</p>' +
       '<p><strong>Hotel:</strong> ' + hotel + ' · Habitación ' + (room.trim() || 'Pendiente') + '</p>' +
       '<p><strong>Zona de recogida:</strong> ' + zoneLabel(zone) + '</p>' +
+      (zone === DEFAULT_ZONE ? '<p class="mc-payment-hint">Si tu hotel está fuera de la zona seleccionada y corresponde un cargo adicional por ubicación, te lo informaremos por WhatsApp. No continuaremos con la reserva sin tu confirmación.</p>' : '') +
       (maps ? '<p><strong>Ubicación compartida:</strong> sí</p>' : '') +
       '<p><strong>Método de pago:</strong> ' + paymentLabel(payment) + '</p>' +
       (paymentNote(payment) ? '<p class="mc-payment-hint">' + paymentNote(payment) + '</p>' : '') +
@@ -1079,6 +1095,7 @@
       html += '<div class="booking-field"><label>Zona de recogida</label>' +
         zoneSelectHtml('bw-zone', state.zone) +
         '<p class="payment-note">Todos los precios publicados ya incluyen salida desde Playa del Carmen / Playacar.</p>' +
+        '<p class="payment-note mc-zone-help">' + ZONE_HELP_NOTE + '</p>' +
         '<p class="payment-note mc-zone-supplement" id="bw-zone-note" hidden></p>' +
         '</div>';
     }
@@ -1181,7 +1198,7 @@
         if (mxnAmt > 0) {
           var pax = currentPayingPax();
           noteEl.hidden = false;
-          noteEl.textContent = '+ ' + mxn(mxnAmt) + ' de suplemento por zona de recogida (' + pax + (pax === 1 ? ' pasajero' : ' pasajeros') + '), ya incluido en el total.';
+          noteEl.textContent = '+ ' + mxn(mxnAmt) + ' de cargo adicional por ubicación (' + pax + (pax === 1 ? ' pasajero' : ' pasajeros') + '), ya incluido en el total.';
         } else {
           noteEl.hidden = true;
         }
