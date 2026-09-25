@@ -3,6 +3,37 @@
 
   var WA_NUMBER = '529841191147';
 
+  // Single source of truth for every translatable string this file uses —
+  // the exact same UI dict scripts/generate_site.py used to render this
+  // page's own HTML, embedded once as JSON (see render_i18n_script). This
+  // file NEVER hardcodes a translatable string of its own; it only ever
+  // reads I18N.key. MC_LANG mirrors <html lang>, baked in at build time —
+  // a page is always single-locale, so no runtime language switching
+  // happens here (switching language is a normal navigation to the
+  // pre-rendered counterpart page, see the lang-switch links in the nav).
+  var I18N = (function () {
+    var el = document.getElementById('mc-i18n');
+    try { return el ? JSON.parse(el.textContent) : {}; } catch (e) { return {}; }
+  })();
+  var MC_LANG = document.documentElement.lang === 'en' ? 'en' : 'es';
+
+  function tt(key) { return I18N[key] != null ? I18N[key] : key; }
+  function fmt(tpl, vals) {
+    return tpl.replace(/\{(\w+)\}/g, function (_, k) { return vals[k] != null ? vals[k] : ''; });
+  }
+  // n===1 uses the 'one' form, everything else (including 0) uses 'other'
+  // — enough for both Spanish and English here, no library needed.
+  function plural(n, key) {
+    var forms = I18N['plural_' + key];
+    if (!forms) return n + ' ' + key;
+    return fmt(n === 1 ? forms.one : forms.other, { n: n });
+  }
+  function joinList(parts) {
+    if (parts.length === 0) return '';
+    if (parts.length === 1) return parts[0];
+    return parts.slice(0, -1).join(', ') + ' ' + tt('list_connector') + ' ' + parts[parts.length - 1];
+  }
+
   var LS_CART = 'mc_cart';
   var LS_NAME = 'mc_name';
   var LS_HOTEL = 'mc_hotel';
@@ -26,10 +57,10 @@
   // marked zoneExempt (pesca-yate-cancun has its own fixed pickup point,
   // Marina Kaybal, and isn't part of this hotel-zone transport system).
   var ZONES = [
-    { value: 'pdc_playacar', label: 'Playa del Carmen / Playacar' },
-    { value: 'cancun', label: 'Cancún' },
-    { value: 'occidental_tulum', label: 'Hoteles Occidental/Xcaret hasta Tulum' },
-    { value: 'costa_mujeres', label: 'Costa Mujeres / Puerto Juárez / Isla Blanca' }
+    { value: 'pdc_playacar', label: tt('zone_pdc_label') },
+    { value: 'cancun', label: tt('zone_cancun_label') },
+    { value: 'occidental_tulum', label: tt('zone_occidental_label') },
+    { value: 'costa_mujeres', label: tt('zone_costa_mujeres_label') }
   ];
   var DEFAULT_ZONE = 'pdc_playacar';
   // Shown right under the zone selector, both in the tour widget and in
@@ -37,7 +68,7 @@
   // that picking the default zone is a safe provisional choice: it never
   // silently confirms the hotel IS in that zone, any real charge still
   // gets confirmed by Agustín on WhatsApp before the booking proceeds.
-  var ZONE_HELP_NOTE = '¿No sabés en qué zona está tu hotel? Elegí Playa del Carmen / Playacar. Si corresponde un cargo adicional por ubicación, te lo vamos a avisar por WhatsApp y esperamos tu confirmación antes de seguir con la reserva.';
+  var ZONE_HELP_NOTE = tt('zone_help_note');
   var ZONE4_FLAT_SURCHARGE_MXN = 300;
 
   function getZone() {
@@ -103,51 +134,51 @@
   var PAYMENT_GROUPS = [
     {
       key: 'pay_on_tour',
-      label: 'Pagar el día del tour',
+      label: tt('pay_group_pay_on_tour_label'),
       featured: true,
-      blurb: 'Reservá ahora y pagá el día del tour, cuando la transportación llegue al punto acordado.',
+      blurb: tt('pay_group_pay_on_tour_blurb'),
       options: [
-        { value: 'cash_mxn', label: 'Efectivo en pesos mexicanos', kind: 'mxn_final' },
-        { value: 'cash_usd', label: 'Efectivo en dólares estadounidenses', kind: 'usd_final' },
-        { value: 'card', label: 'Tarjeta Visa o Mastercard (+5% recargo)', kind: 'card_mxn' }
+        { value: 'cash_mxn', label: tt('pay_opt_cash_mxn'), kind: 'mxn_final' },
+        { value: 'cash_usd', label: tt('pay_opt_cash_usd'), kind: 'usd_final' },
+        { value: 'card', label: tt('pay_opt_card'), kind: 'card_mxn' }
       ]
     },
     {
       key: 'transfer',
-      label: 'Transferencia',
-      blurb: 'Podés pagar por transferencia en pesos mexicanos, dólares estadounidenses, pesos argentinos, pesos colombianos o euros. Te enviamos por WhatsApp los datos correspondientes y, cuando haga falta convertir la moneda, la cotización vigente del día.',
+      label: tt('pay_group_transfer_label'),
+      blurb: tt('pay_group_transfer_blurb'),
       conditions: [
-        'Los datos para realizar la transferencia se enviarán por WhatsApp.',
-        'Para continuar con la reserva, el pago debe aparecer acreditado en el estado de cuenta del operador.',
-        'El tour debe estar pagado al 100% antes de confirmar la reserva.'
+        tt('pay_transfer_cond1'),
+        tt('pay_transfer_cond2'),
+        tt('pay_transfer_cond3')
       ],
       // Shown only when the chosen currency actually needs a quote (i.e.
       // anything but transfer_mxn) — mentioning "cotización" next to MXN
       // would be confusing since no conversion ever happens there.
       quoteConditions: [
-        'La cotización proporcionada será válida únicamente durante ese día.',
-        'La cotización corresponde solo a la conversión de moneda — no es un cargo adicional sobre el precio del tour.'
+        tt('pay_transfer_quote_cond1'),
+        tt('pay_transfer_quote_cond2')
       ],
       options: [
-        { value: 'transfer_mxn', label: 'MXN — CLABE/SPEI', kind: 'mxn_final' },
-        { value: 'transfer_usd', label: 'USD — ACH o wire', kind: 'usd_ref' },
-        { value: 'transfer_ars', label: 'ARS — pesos argentinos', kind: 'usd_ref' },
-        { value: 'transfer_cop', label: 'COP — pesos colombianos', kind: 'usd_ref' },
-        { value: 'transfer_eur', label: 'EUR — SEPA', kind: 'usd_ref' }
+        { value: 'transfer_mxn', label: tt('pay_opt_transfer_mxn'), kind: 'mxn_final' },
+        { value: 'transfer_usd', label: tt('pay_opt_transfer_usd'), kind: 'usd_ref' },
+        { value: 'transfer_ars', label: tt('pay_opt_transfer_ars'), kind: 'usd_ref' },
+        { value: 'transfer_cop', label: tt('pay_opt_transfer_cop'), kind: 'usd_ref' },
+        { value: 'transfer_eur', label: tt('pay_opt_transfer_eur'), kind: 'usd_ref' }
       ]
     },
     {
       key: 'crypto',
-      label: 'Criptomonedas',
-      blurb: 'La dirección y la red para enviar el pago se comparten por WhatsApp.',
+      label: tt('pay_group_crypto_label'),
+      blurb: tt('pay_group_crypto_blurb'),
       conditions: [
-        'La dirección y la red se proporcionarán por WhatsApp.',
-        'Se requiere recibir el 100% del pago antes de confirmar la reserva.'
+        tt('pay_crypto_cond1'),
+        tt('pay_crypto_cond2')
       ],
       options: [
-        { value: 'crypto_btc', label: 'Bitcoin (BTC)', kind: 'usd_ref_btc' },
-        { value: 'crypto_usdt', label: 'USDT', kind: 'usd_ref' },
-        { value: 'crypto_usdc', label: 'USDC', kind: 'usd_ref' }
+        { value: 'crypto_btc', label: tt('pay_opt_btc'), kind: 'usd_ref_btc' },
+        { value: 'crypto_usdt', label: tt('pay_opt_usdt'), kind: 'usd_ref' },
+        { value: 'crypto_usdc', label: tt('pay_opt_usdc'), kind: 'usd_ref' }
       ]
     }
   ];
@@ -173,13 +204,13 @@
     var f = findPaymentOption(value);
     if (!f) return '';
     var kind = f.option.kind;
-    if (kind === 'card_mxn') return 'El tipo de cambio aplicado por tu banco puede variar.';
-    if (kind === 'usd_ref_btc') return 'Te enviaremos por WhatsApp la dirección, la red y la cotización en BTC.';
-    if (f.group.key === 'crypto') return 'Te enviaremos por WhatsApp la dirección y la red — el monto a enviar es el mismo total en USD.';
+    if (kind === 'card_mxn') return tt('pay_note_card');
+    if (kind === 'usd_ref_btc') return tt('pay_note_btc');
+    if (f.group.key === 'crypto') return tt('pay_note_crypto_other');
     if (f.group.key === 'transfer') return f.option.value === 'transfer_mxn'
-      ? 'Te enviaremos por WhatsApp los datos para transferir (CLABE/SPEI).'
-      : 'Te enviaremos por WhatsApp los datos y la cotización correspondiente.';
-    return 'Coordinamos el pago para el día de la excursión, directo con Agustín.';
+      ? tt('pay_note_transfer_mxn')
+      : tt('pay_note_transfer_other');
+    return tt('pay_note_default');
   }
   function mxn(n) { return '$' + Math.round(n).toLocaleString('en-US') + ' MXN'; }
   // Formats a base USD total for display/messaging according to the
@@ -269,9 +300,9 @@
   }
 
   function fmtDate(iso) {
-    if (!iso) return 'A coordinar';
+    if (!iso) return tt('date_unspecified_short');
     var parts = iso.split('-');
-    var meses = ['ene', 'feb', 'mar', 'abr', 'may', 'jun', 'jul', 'ago', 'sep', 'oct', 'nov', 'dic'];
+    var meses = I18N.months_short || [];
     var d = parseInt(parts[2], 10), m = parseInt(parts[1], 10) - 1, y = parts[0];
     return d + ' ' + meses[m] + ' ' + y;
   }
@@ -280,45 +311,40 @@
   // several tours never shares one calendar or one passenger count, since
   // different tours in the same reservation can carry different people/dates.
   function cartItemDateLine(item) {
-    if (!item.date) return item.tentative ? 'Fecha a coordinar (sin días fijos)' : 'Sin fecha elegida';
-    return (item.tentative ? 'Fecha tentativa: ' : 'Fecha: ') + fmtDate(item.date);
+    if (!item.date) return item.tentative ? tt('date_tbd') : tt('date_not_chosen');
+    return (item.tentative ? tt('dp_tentative_prefix') : tt('date_confirmed_prefix')) + fmtDate(item.date);
   }
   function cartItemPaxLine(item) {
     var bits = [];
     if (item.optionLabel) bits.push(item.optionLabel);
     if (item.adults != null) {
-      bits.push(item.adults + (item.adults === 1 ? ' adulto' : ' adultos'));
-      if (item.children) bits.push(item.children + (item.children === 1 ? ' niño' : ' niños'));
+      bits.push(plural(item.adults, 'adult'));
+      if (item.children) bits.push(plural(item.children, 'child'));
     } else if (item.persons != null) {
-      bits.push(item.persons + (item.persons === 1 ? ' persona' : ' personas'));
+      bits.push(plural(item.persons, 'person'));
     }
-    if (item.infants) bits.push(item.infants + (item.infants === 1 ? ' infante' : ' infantes'));
+    if (item.infants) bits.push(plural(item.infants, 'infant'));
     var totalPax = (item.adults || 0) + (item.children || 0) + (item.persons || 0) + (item.infants || 0);
-    return bits.join(', ') + ' — ' + totalPax + ' pax para transporte';
+    return bits.join(', ') + fmt(tt('wa_pax_transport_suffix_tpl'), { n: totalPax });
   }
-  // Joins non-zero pax categories as natural Spanish prose ("2 adultos, 1
-  // niño y 1 infante"), used by the WhatsApp message. Never mentions a
-  // category with count 0. Tours priced 'adult_child' (which actually
-  // charge a different price per age) get "adultos"/"niños" split out;
-  // every other pricing type keeps its existing "personas" wording, since
-  // those widgets never asked for an adults/children split in the first
-  // place (same price regardless of age) — infants are still their own
-  // category everywhere, since no pricing type ever charges for them.
-  function joinSpanishList(parts) {
-    if (parts.length === 0) return '';
-    if (parts.length === 1) return parts[0];
-    return parts.slice(0, -1).join(', ') + ' y ' + parts[parts.length - 1];
-  }
+  // Joins non-zero pax categories as natural prose ("2 adults, 1 child and
+  // 1 infant"), used by the WhatsApp message. Never mentions a category
+  // with count 0. Tours priced 'adult_child' (which actually charge a
+  // different price per age) get adult/child split out; every other
+  // pricing type keeps its "person(s)" wording, since those widgets never
+  // asked for an adults/children split in the first place — infants are
+  // still their own category everywhere, since no pricing type charges
+  // for them.
   function waPaxPhrase(item) {
     var parts = [];
     if (item.adults != null) {
-      if (item.adults) parts.push(item.adults + (item.adults === 1 ? ' adulto' : ' adultos'));
-      if (item.children) parts.push(item.children + (item.children === 1 ? ' niño' : ' niños'));
+      if (item.adults) parts.push(plural(item.adults, 'adult'));
+      if (item.children) parts.push(plural(item.children, 'child'));
     } else if (item.persons != null && item.persons) {
-      parts.push(item.persons + (item.persons === 1 ? ' persona' : ' personas'));
+      parts.push(plural(item.persons, 'person'));
     }
-    if (item.infants) parts.push(item.infants + (item.infants === 1 ? ' infante' : ' infantes'));
-    return joinSpanishList(parts);
+    if (item.infants) parts.push(plural(item.infants, 'infant'));
+    return joinList(parts);
   }
   // Clear, separate line for the zone supplement (never folded silently
   // into the price) — shown on the tour widget before adding AND in the
@@ -327,7 +353,7 @@
     var mxnAmount = itemZoneSupplementMXN(item, zoneValue);
     if (!mxnAmount) return '';
     var pax = payingPax(item);
-    return '<div class="mc-cart-item-detail mc-zone-supplement">+ ' + mxn(mxnAmount) + ' de cargo adicional por ubicación (' + pax + (pax === 1 ? ' pasajero' : ' pasajeros') + ')</div>';
+    return '<div class="mc-cart-item-detail mc-zone-supplement">' + fmt(tt('zone_charge_line_tpl'), { amount: mxn(mxnAmount), pax: plural(pax, 'passenger') }) + '</div>';
   }
 
   // "Today" as the calendar (Cancún/Riviera Maya, no DST) sees it — NOT the
@@ -354,6 +380,29 @@
     return new Date(Date.UTC(p[0], p[1] - 1, p[2])).getUTCDay();
   }
 
+  // Rolling "one calendar month ahead" ceiling on bookings (added
+  // 2026-09-25): if today is Sep 25, the last bookable date is Oct 25; if
+  // the next month doesn't have that day number (e.g. today is Jan 31),
+  // it clamps to that month's last day (Feb 28/29) rather than overflowing
+  // into March. Pure Y/M/D integer arithmetic — deliberately NOT built
+  // from a local `new Date(...)`, for the same reason isoWeekday() isn't:
+  // the visitor's own timezone must never shift which calendar day this
+  // resolves to. daysInMonth()/isoOf() below already do this safely
+  // (Date.UTC only, no local-time reads).
+  var cancunMaxDateCache = null;
+  function cancunMaxDateISO() {
+    var today = cancunTodayISO();
+    if (cancunMaxDateCache && cancunMaxDateCache.today === today) return cancunMaxDateCache.iso;
+    var p = today.split('-').map(Number);
+    var y = p[0], m = p[1], d = p[2];
+    var nextM = m + 1, nextY = y;
+    if (nextM > 12) { nextM = 1; nextY = y + 1; }
+    var clampedDay = Math.min(d, daysInMonth(nextY, nextM));
+    var iso = isoOf(nextY, nextM, clampedDay);
+    cancunMaxDateCache = { today: today, iso: iso };
+    return iso;
+  }
+
   function usd(n) { return '$' + n.toLocaleString('en-US') + ' USD'; }
 
   // ===========================================================================
@@ -372,42 +421,49 @@
   // so nothing blocked is ever selectable, visually or by keyboard.
   // ===========================================================================
 
-  var MESES_LARGO = ['enero', 'febrero', 'marzo', 'abril', 'mayo', 'junio', 'julio', 'agosto', 'septiembre', 'octubre', 'noviembre', 'diciembre'];
+  var MESES_LARGO = I18N.months_long || ['enero', 'febrero', 'marzo', 'abril', 'mayo', 'junio', 'julio', 'agosto', 'septiembre', 'octubre', 'noviembre', 'diciembre'];
 
   function daysInMonth(y, m) { return new Date(Date.UTC(y, m, 0)).getUTCDate(); } // m is 1-12
   function pad2(n) { return n < 10 ? '0' + n : '' + n; }
   function isoOf(y, m, d) { return y + '-' + pad2(m) + '-' + pad2(d); }
 
-  // THE single source of truth for "can this date be picked" — used by
-  // the calendar to greek out cells AND, separately, called again as a
-  // hard gate right before adding to cart / sending the WhatsApp message.
-  // Visually blocking a day is not enough on its own: the date actually
-  // has to be re-checked at both of those moments too.
+  // THE single source of truth for "can this date be picked, and if not,
+  // why" — used by the calendar to grey out cells AND, separately, called
+  // again as a hard gate right before adding to cart / sending the
+  // WhatsApp message. Visually blocking a day is not enough on its own:
+  // the date actually has to be re-checked at both of those moments too.
+  // Returns null when allowed, else a reason code the UI uses to show a
+  // specific explanation ('past' / 'too-far' / 'schedule').
+  function dateBlockReason(iso, schedule) {
+    if (!iso || !schedule) return 'invalid';
+    if (iso < cancunTodayISO()) return 'past';
+    if (iso > cancunMaxDateISO()) return 'too-far';
+    if (schedule.type === 'weekly' && schedule.days.indexOf(isoWeekday(iso)) === -1) return 'schedule';
+    if (schedule.type === 'seasonal' && schedule.months.indexOf(parseInt(iso.split('-')[1], 10)) === -1) return 'schedule';
+    return null; // daily, on_request, or within the weekly/seasonal window
+  }
   function isDateAllowed(iso, schedule) {
-    if (!iso || !schedule) return false;
-    if (iso < cancunTodayISO()) return false;
-    if (schedule.type === 'weekly') return schedule.days.indexOf(isoWeekday(iso)) !== -1;
-    if (schedule.type === 'seasonal') return schedule.months.indexOf(parseInt(iso.split('-')[1], 10)) !== -1;
-    return true; // daily, on_request: any future date
+    return dateBlockReason(iso, schedule) === null;
   }
   function isTentativeSchedule(schedule) {
     return !schedule || schedule.type === 'seasonal' || schedule.type === 'on_request';
   }
 
   function datePickerHtml(id) {
+    var weekdays = (I18N.dp_weekdays || ['D', 'L', 'M', 'M', 'J', 'V', 'S']).map(function (w) { return '<span>' + w + '</span>'; }).join('');
     return '<div class="mc-datepicker" id="' + id + '">' +
       '<button type="button" class="mc-dp-trigger" aria-haspopup="true" aria-expanded="false">' +
-      '<span class="mc-dp-trigger-text">Elegí una fecha</span><span class="mc-dp-trigger-icon">📅</span>' +
+      '<span class="mc-dp-trigger-text">' + tt('dp_choose_date') + '</span><span class="mc-dp-trigger-icon">📅</span>' +
       '</button>' +
       '<div class="mc-dp-panel" hidden>' +
       '<div class="mc-dp-head">' +
-      '<button type="button" class="mc-dp-nav" data-dir="-1" aria-label="Mes anterior">‹</button>' +
+      '<button type="button" class="mc-dp-nav" data-dir="-1" aria-label="' + tt('dp_prev_month_aria') + '">‹</button>' +
       '<span class="mc-dp-month"></span>' +
-      '<button type="button" class="mc-dp-nav" data-dir="1" aria-label="Mes siguiente">›</button>' +
+      '<button type="button" class="mc-dp-nav" data-dir="1" aria-label="' + tt('dp_next_month_aria') + '">›</button>' +
       '</div>' +
-      '<div class="mc-dp-weekdays"><span>D</span><span>L</span><span>M</span><span>M</span><span>J</span><span>V</span><span>S</span></div>' +
+      '<div class="mc-dp-weekdays">' + weekdays + '</div>' +
       '<div class="mc-dp-grid" role="grid"></div>' +
-      '<p class="mc-dp-blocked-msg" aria-live="polite" hidden>Ese día no está disponible para este tour.</p>' +
+      '<p class="mc-dp-blocked-msg" aria-live="polite" hidden></p>' +
       '</div>' +
       '</div>';
   }
@@ -435,8 +491,8 @@
     var blockedMsgEl = container.querySelector('.mc-dp-blocked-msg');
 
     function updateTriggerText() {
-      if (!selectedISO) { triggerText.textContent = 'Elegí una fecha'; return; }
-      triggerText.textContent = (opts.tentative ? 'Fecha tentativa: ' : 'Fecha elegida: ') + fmtDate(selectedISO);
+      if (!selectedISO) { triggerText.textContent = tt('dp_choose_date'); return; }
+      triggerText.textContent = (opts.tentative ? tt('dp_tentative_prefix') : tt('dp_selected_prefix')) + fmtDate(selectedISO);
     }
     updateTriggerText();
 
@@ -499,11 +555,16 @@
         || cells[0];
       if (roving) roving.tabIndex = 0;
       prevBtn.disabled = (viewYear === todayParts[0] && viewMonth === todayParts[1]);
+      var maxParts = cancunMaxDateISO().split('-').map(Number);
+      nextBtn.disabled = (viewYear === maxParts[0] && viewMonth === maxParts[1]);
     }
 
+    var BLOCK_REASON_KEY = { past: 'dp_blocked_past', 'too-far': 'dp_blocked_too_far', schedule: 'dp_blocked_schedule', invalid: 'dp_blocked_schedule' };
     function selectCell(cell) {
       if (!cell) return;
       if (cell.getAttribute('aria-disabled') === 'true') {
+        var reason = dateBlockReason(cell.getAttribute('data-iso'), opts.schedule);
+        blockedMsgEl.innerHTML = tt(BLOCK_REASON_KEY[reason] || 'dp_blocked_schedule');
         blockedMsgEl.hidden = false;
         return;
       }
@@ -572,15 +633,15 @@
     var btn = document.createElement('button');
     btn.id = 'mc-cart-btn';
     btn.type = 'button';
-    btn.setAttribute('aria-label', 'Ver carrito de reserva');
+    btn.setAttribute('aria-label', tt('cart_view_aria'));
     btn.innerHTML = '🛒<span id="mc-cart-badge" class="mc-cart-badge">0</span>';
     document.body.appendChild(btn);
 
     var overlay = document.createElement('div');
     overlay.id = 'mc-cart-overlay';
     overlay.className = 'mc-cart-overlay';
-    overlay.innerHTML = '<div class="mc-cart-drawer" role="dialog" aria-label="Carrito de reserva">' +
-      '<div class="mc-cart-head"><h3>Tu reserva</h3><button type="button" id="mc-cart-close" aria-label="Cerrar">×</button></div>' +
+    overlay.innerHTML = '<div class="mc-cart-drawer" role="dialog" aria-label="' + tt('cart_dialog_aria') + '">' +
+      '<div class="mc-cart-head"><h3>' + tt('cart_title') + '</h3><button type="button" id="mc-cart-close" aria-label="' + tt('cart_close_aria') + '">×</button></div>' +
       '<div id="mc-cart-items" class="mc-cart-items"></div>' +
       '<div id="mc-cart-checkout" class="mc-cart-checkout"></div>' +
       '</div>';
@@ -627,7 +688,7 @@
 
     if (cart.length === 0) {
       cartReviewMode = false;
-      itemsEl.innerHTML = '<p class="mc-cart-empty">Todavía no agregaste ningún tour. Elegí uno y tocá "Agregar al carrito" para armar tu reserva.</p>';
+      itemsEl.innerHTML = '<p class="mc-cart-empty">' + tt('cart_empty') + '</p>';
       checkoutEl.innerHTML = '';
       return;
     }
@@ -648,10 +709,10 @@
         '<div class="mc-cart-item-detail">' + cartItemDateLine(item) + '</div>' +
         '<div class="mc-cart-item-detail">' + cartItemPaxLine(item) + '</div>' +
         cartItemZoneLine(item, zone) +
-        '<div class="mc-cart-item-price">' + (typeof item.total === 'number' ? usd(itemDisplayTotalUsd(item, zone)) : 'A cotizar') + '</div>' +
-        '<button type="button" class="mc-cart-edit" data-idx="' + i + '">Editar</button>' +
+        '<div class="mc-cart-item-price">' + (typeof item.total === 'number' ? usd(itemDisplayTotalUsd(item, zone)) : tt('cart_quote_label')) + '</div>' +
+        '<button type="button" class="mc-cart-edit" data-idx="' + i + '">' + tt('cart_edit_btn') + '</button>' +
         '</div>' +
-        '<button type="button" class="mc-cart-remove" data-idx="' + i + '" aria-label="Quitar">×</button>' +
+        '<button type="button" class="mc-cart-remove" data-idx="' + i + '" aria-label="' + tt('cart_remove_aria') + '">×</button>' +
         '</div>';
     }).join('');
 
@@ -678,33 +739,33 @@
     var anyTentative = cart.some(function (item) { return item.tentative; });
 
     checkoutEl.innerHTML =
-      '<div class="mc-cart-total-row"><span>Total</span><strong>' + formatPaymentTotal(combinedUsd, payment) + (hasQuote ? ' + ítems a cotizar' : '') + '</strong></div>' +
-      (totalSupplementMXN ? '<p class="mc-cart-persons">Incluye ' + mxn(totalSupplementMXN) + ' de cargo adicional por ubicación.</p>' : '') +
-      (findPaymentOption(payment) && findPaymentOption(payment).option.kind === 'card_mxn' ? '<p class="mc-cart-persons">Incluye 5% de recargo por pago con tarjeta.</p>' : '') +
-      (anyTentative ? '<p class="mc-cart-persons">⚠️ Uno o más tours tienen fecha tentativa — Agustín confirma disponibilidad por WhatsApp.</p>' : '') +
-      '<div class="booking-field"><label for="mc-zone">Zona de recogida</label>' +
+      '<div class="mc-cart-total-row"><span>' + tt('cart_total_label') + '</span><strong>' + formatPaymentTotal(combinedUsd, payment) + (hasQuote ? tt('cart_quote_suffix') : '') + '</strong></div>' +
+      (totalSupplementMXN ? '<p class="mc-cart-persons">' + fmt(tt('cart_zone_charge_note_tpl'), { amount: mxn(totalSupplementMXN) }) + '</p>' : '') +
+      (findPaymentOption(payment) && findPaymentOption(payment).option.kind === 'card_mxn' ? '<p class="mc-cart-persons">' + tt('cart_card_surcharge_note') + '</p>' : '') +
+      (anyTentative ? '<p class="mc-cart-persons">' + tt('cart_tentative_warning') + '</p>' : '') +
+      '<div class="booking-field"><label for="mc-zone">' + tt('zone_field_label') + '</label>' +
       zoneSelectHtml('mc-zone', zone) +
-      '<p class="payment-note">Todos los precios publicados ya incluyen salida desde Playa del Carmen / Playacar.</p>' +
+      '<p class="payment-note">' + tt('zone_price_note') + '</p>' +
       '<p class="payment-note mc-zone-help">' + ZONE_HELP_NOTE + '</p>' +
       '</div>' +
-      '<div class="booking-field"><label for="mc-name">Nombre completo</label>' +
-      '<input type="text" id="mc-name" placeholder="Nombre y apellido de quien reserva" value="' + name.replace(/"/g, '&quot;') + '"></div>' +
+      '<div class="booking-field"><label for="mc-name">' + tt('name_field_label') + '</label>' +
+      '<input type="text" id="mc-name" placeholder="' + tt('name_field_placeholder') + '" value="' + name.replace(/"/g, '&quot;') + '"></div>' +
       '<div class="booking-field-row">' +
-      '<div class="booking-field"><label for="mc-hotel">Hotel / lugar de hospedaje</label>' +
-      '<input type="text" id="mc-hotel" placeholder="Ej: Hotel Grand Sirenis" value="' + hotel.replace(/"/g, '&quot;') + '"></div>' +
-      '<div class="booking-field booking-field-narrow"><label for="mc-room">N° de habitación</label>' +
-      '<input type="text" id="mc-room" placeholder="Ej: 204, o «Pendiente»" value="' + room.replace(/"/g, '&quot;') + '"></div>' +
+      '<div class="booking-field"><label for="mc-hotel">' + tt('hotel_field_label') + '</label>' +
+      '<input type="text" id="mc-hotel" placeholder="' + tt('hotel_field_placeholder') + '" value="' + hotel.replace(/"/g, '&quot;') + '"></div>' +
+      '<div class="booking-field booking-field-narrow"><label for="mc-room">' + tt('room_field_label') + '</label>' +
+      '<input type="text" id="mc-room" placeholder="' + tt('room_field_placeholder') + '" value="' + room.replace(/"/g, '&quot;') + '"></div>' +
       '</div>' +
       '<div class="booking-field">' +
-      '<button type="button" class="btn-secondary mc-loc-btn" id="mc-share-location">📍 Compartir mi ubicación</button>' +
-      '<div id="mc-loc-status" class="mc-loc-status">' + (maps ? '✓ Ubicación agregada' : '') + '</div>' +
+      '<button type="button" class="btn-secondary mc-loc-btn" id="mc-share-location">' + tt('share_location_btn') + '</button>' +
+      '<div id="mc-loc-status" class="mc-loc-status">' + (maps ? tt('location_added') : '') + '</div>' +
       '</div>' +
-      '<div class="booking-field"><label>Método de pago</label>' +
+      '<div class="booking-field"><label>' + tt('payment_field_label') + '</label>' +
       paymentPickerHtml(payment) +
       '</div>' +
-      '<button type="button" class="btn-primary" id="mc-review-cta">Revisar y reservar</button>' +
+      '<button type="button" class="btn-primary" id="mc-review-cta">' + tt('review_cta_btn') + '</button>' +
       '<p class="contact-form-status" id="mc-checkout-status"></p>' +
-      '<button type="button" class="mc-clear-cart" id="mc-clear-cart">Vaciar carrito</button>';
+      '<button type="button" class="mc-clear-cart" id="mc-clear-cart">' + tt('clear_cart_btn') + '</button>';
 
     document.getElementById('mc-zone').addEventListener('change', function (e) { setZone(e.target.value); renderCartDrawer(); });
     document.getElementById('mc-name').addEventListener('input', function (e) { setStr(LS_NAME, e.target.value); e.target.classList.toggle('field-invalid', !e.target.value.trim()); });
@@ -713,7 +774,7 @@
     bindPaymentPicker(function () { renderCartDrawer(); });
     document.getElementById('mc-share-location').addEventListener('click', shareLocation);
     document.getElementById('mc-clear-cart').addEventListener('click', function () {
-      if (confirm('¿Vaciar todo el carrito?')) {
+      if (confirm(tt('clear_cart_confirm'))) {
         setCart([]);
         updateCartBadge();
         renderCartDrawer();
@@ -735,7 +796,7 @@
       return '<label class="payment-group-option' + (g.featured ? ' featured' : '') + (isSel ? ' selected' : '') + '">' +
         '<span class="payment-group-head">' +
         '<input type="radio" name="mc-payment-group" value="' + g.key + '"' + (isSel ? ' checked' : '') + '>' +
-        '<strong>' + g.label + '</strong>' + (g.featured ? '<span class="payment-group-badge">Recomendado</span>' : '') +
+        '<strong>' + g.label + '</strong>' + (g.featured ? '<span class="payment-group-badge">' + tt('payment_recommended_badge') + '</span>' : '') +
         '</span>' +
         '<span class="payment-group-blurb">' + g.blurb + '</span>' +
         '</label>';
@@ -796,7 +857,7 @@
     var totalSupplementMXN = 0;
     var hasQuote = false;
 
-    itemsEl.innerHTML = '<p class="mc-review-label">Revisá tu reserva antes de enviarla</p>' + cart.map(function (item) {
+    itemsEl.innerHTML = '<p class="mc-review-label">' + tt('review_label') + '</p>' + cart.map(function (item) {
       if (typeof item.total === 'number') { total += item.total; totalSupplementMXN += itemZoneSupplementMXN(item, zone); }
       else hasQuote = true;
       return '<div class="mc-cart-item">' +
@@ -806,30 +867,30 @@
         '<div class="mc-cart-item-detail">' + cartItemDateLine(item) + '</div>' +
         '<div class="mc-cart-item-detail">' + cartItemPaxLine(item) + '</div>' +
         cartItemZoneLine(item, zone) +
-        '<div class="mc-cart-item-price">' + (typeof item.total === 'number' ? usd(itemDisplayTotalUsd(item, zone)) : 'A cotizar') + '</div>' +
+        '<div class="mc-cart-item-price">' + (typeof item.total === 'number' ? usd(itemDisplayTotalUsd(item, zone)) : tt('cart_quote_label')) + '</div>' +
         '</div></div>';
     }).join('');
 
     var combinedUsd = total + mxnToUsd(totalSupplementMXN);
     checkoutEl.innerHTML =
-      '<div class="mc-cart-total-row"><span>Total</span><strong>' + formatPaymentTotal(combinedUsd, payment) + (hasQuote ? ' + ítems a cotizar' : '') + '</strong></div>' +
+      '<div class="mc-cart-total-row"><span>' + tt('cart_total_label') + '</span><strong>' + formatPaymentTotal(combinedUsd, payment) + (hasQuote ? tt('cart_quote_suffix') : '') + '</strong></div>' +
       '<div class="mc-review-summary">' +
-      '<p><strong>Nombre:</strong> ' + name + '</p>' +
-      '<p><strong>Hotel:</strong> ' + hotel + ' · Habitación ' + (room.trim() || 'Pendiente') + '</p>' +
-      '<p><strong>Zona de recogida:</strong> ' + zoneLabel(zone) + '</p>' +
-      (zone === DEFAULT_ZONE ? '<p class="mc-payment-hint">Si tu hotel está fuera de la zona seleccionada y corresponde un cargo adicional por ubicación, te lo informaremos por WhatsApp. No continuaremos con la reserva sin tu confirmación.</p>' : '') +
-      (maps ? '<p><strong>Ubicación compartida:</strong> sí</p>' : '') +
-      '<p><strong>Método de pago:</strong> ' + paymentLabel(payment) + '</p>' +
+      '<p><strong>' + tt('review_name_label') + '</strong> ' + name + '</p>' +
+      '<p><strong>' + tt('review_hotel_label') + '</strong> ' + hotel + tt('review_room_prefix') + (room.trim() || tt('room_pending')) + '</p>' +
+      '<p><strong>' + tt('review_zone_label') + '</strong> ' + zoneLabel(zone) + '</p>' +
+      (zone === DEFAULT_ZONE ? '<p class="mc-payment-hint">' + tt('review_zone_hint') + '</p>' : '') +
+      (maps ? '<p><strong>' + tt('review_location_shared_label') + '</strong> ' + tt('review_location_shared_yes') + '</p>' : '') +
+      '<p><strong>' + tt('review_payment_label') + '</strong> ' + paymentLabel(payment) + '</p>' +
       (paymentNote(payment) ? '<p class="mc-payment-hint">' + paymentNote(payment) + '</p>' : '') +
       '</div>' +
-      '<p class="booking-fineprint">Esto no confirma la reserva ni cobra nada — Agustín confirma disponibilidad y coordina el pago directo por WhatsApp.</p>' +
+      '<p class="booking-fineprint">' + tt('review_fineprint') + '</p>' +
       '<div class="mc-next-steps">' +
-      '<p class="mc-next-steps-title">Qué sigue:</p>' +
-      '<ol><li>Agustín confirma cupo.</li><li>Coordinan método de pago.</li><li>Recibís horario y punto de salida.</li></ol>' +
+      '<p class="mc-next-steps-title">' + tt('review_next_steps_title') + '</p>' +
+      '<ol><li>' + tt('review_next_step1') + '</li><li>' + tt('review_next_step2') + '</li><li>' + tt('review_next_step3') + '</li></ol>' +
       '</div>' +
-      '<button type="button" class="btn-primary" id="mc-confirm-send">Enviar solicitud por WhatsApp</button>' +
+      '<button type="button" class="btn-primary" id="mc-confirm-send">' + tt('review_send_btn') + '</button>' +
       '<p class="contact-form-status" id="mc-checkout-status"></p>' +
-      '<button type="button" class="btn-secondary" id="mc-back-to-edit">← Volver a editar</button>';
+      '<button type="button" class="btn-secondary" id="mc-back-to-edit">' + tt('review_back_btn') + '</button>';
 
     document.getElementById('mc-confirm-send').addEventListener('click', confirmAndSendWhatsApp);
     document.getElementById('mc-back-to-edit').addEventListener('click', backToEdit);
@@ -838,16 +899,16 @@
   function shareLocation() {
     var status = document.getElementById('mc-loc-status');
     if (!navigator.geolocation) {
-      if (status) status.textContent = 'Tu navegador no permite compartir ubicación. Escribí el hotel arriba.';
+      if (status) status.textContent = tt('location_unsupported');
       return;
     }
-    if (status) status.textContent = 'Buscando tu ubicación…';
+    if (status) status.textContent = tt('location_searching');
     navigator.geolocation.getCurrentPosition(function (pos) {
       var link = 'https://www.google.com/maps?q=' + pos.coords.latitude + ',' + pos.coords.longitude;
       setStr(LS_MAPS, link);
-      if (status) status.textContent = '✓ Ubicación agregada';
+      if (status) status.textContent = tt('location_added');
     }, function () {
-      if (status) status.textContent = 'No pudimos obtener tu ubicación. Escribí el nombre del hotel arriba, no hay problema.';
+      if (status) status.textContent = tt('location_error');
     }, { timeout: 10000 });
   }
 
@@ -860,19 +921,28 @@
   function checkoutValidate(cart, name, hotel, room, payment) {
     var invalidTour = cart.filter(function (item) { return !isDateAllowed(item.date, item.schedule); })[0];
     var missing = [];
-    if (!name.trim()) missing.push('el nombre completo');
-    if (!hotel.trim()) missing.push('el hotel');
-    if (!room.trim()) missing.push('el número de habitación (o escribí "Pendiente")');
-    if (!isValidPaymentValue(payment)) missing.push('el método de pago');
+    if (!name.trim()) missing.push(tt('error_missing_name'));
+    if (!hotel.trim()) missing.push(tt('error_missing_hotel'));
+    if (!room.trim()) missing.push(tt('error_missing_room'));
+    if (!isValidPaymentValue(payment)) missing.push(tt('error_missing_payment'));
     return { ok: !invalidTour && missing.length === 0, missing: missing, invalidTour: invalidTour };
   }
 
+  // A tour going stale in the cart because its date is now beyond the
+  // one-month advance window (not just a plain "schedule changed" case)
+  // gets its own explanation + a link to the future-trip contact form,
+  // instead of the generic "pick another date" message — the cart is
+  // never silently cleared either way, just blocked with an explanation.
   function showCheckoutErrors(result) {
     var status = document.getElementById('mc-checkout-status');
     if (status) {
-      status.textContent = result.invalidTour
-        ? 'La fecha de "' + result.invalidTour.name + '" ya no es válida — abrí ese tour y elegí otra.'
-        : 'Completá ' + result.missing.join(', ') + ' antes de reservar.';
+      if (result.invalidTour) {
+        var reason = dateBlockReason(result.invalidTour.date, result.invalidTour.schedule);
+        var tplKey = reason === 'too-far' ? 'error_invalid_tour_too_far_tpl' : 'error_invalid_tour_tpl';
+        status.innerHTML = fmt(tt(tplKey), { name: result.invalidTour.name });
+      } else {
+        status.textContent = fmt(tt('error_missing_tpl'), { fields: result.missing.join(', ') });
+      }
       status.className = 'contact-form-status error';
     }
     var name = getStr(LS_NAME), hotel = getStr(LS_HOTEL), room = getStr(LS_ROOM), payment = getStr(LS_PAYMENT);
@@ -893,19 +963,19 @@
   // charge shown in the cart.
   function paymentMessageLines(payment, totalUsd) {
     var f = findPaymentOption(payment);
-    var lines = ['Total a pagar: ' + formatPaymentTotal(totalUsd, payment) + (f && f.option.kind === 'card_mxn' ? ' (recargo del 5% ya incluido)' : '')];
-    lines.push('Método de pago: ' + paymentLabel(payment));
+    var lines = [tt('wa_total_label') + formatPaymentTotal(totalUsd, payment) + (f && f.option.kind === 'card_mxn' ? tt('wa_card_surcharge_note') : '')];
+    lines.push(tt('wa_payment_method_label') + paymentLabel(payment));
     if (f) {
       if (f.option.kind === 'card_mxn') {
-        lines.push('El tipo de cambio aplicado por tu banco puede variar.');
+        lines.push(tt('pay_note_card'));
       } else if (f.option.value === 'transfer_mxn') {
-        lines.push('Quedo a la espera de los datos para transferir (CLABE/SPEI) por WhatsApp.');
+        lines.push(tt('wa_note_transfer_mxn'));
       } else if (f.group.key === 'transfer') {
-        lines.push('Quedo a la espera de los datos y la cotización correspondiente por WhatsApp.');
+        lines.push(tt('wa_note_transfer_other'));
       } else if (f.option.kind === 'usd_ref_btc') {
-        lines.push('Quedo a la espera de la dirección, la red y la cotización en BTC por WhatsApp.');
+        lines.push(tt('wa_note_btc'));
       } else if (f.group.key === 'crypto') {
-        lines.push('Quedo a la espera de la dirección y la red por WhatsApp.');
+        lines.push(tt('wa_note_crypto_other'));
       }
     }
     return lines;
@@ -918,7 +988,7 @@
   // tour list, no matter how many tours are in the cart.
   function buildWhatsAppLines(cart, name, hotel, room, maps, payment) {
     var zone = getZone();
-    var lines = ['Hola, me llamo ' + name + ' y quiero solicitar la reserva de los siguientes tours:', ''];
+    var lines = [fmt(tt('wa_greeting_tpl'), { name: name }), ''];
     var total = 0;
     var totalSupplementMXN = 0;
     cart.forEach(function (item, i) {
@@ -926,18 +996,18 @@
       lines.push((i + 1) + '. ' + item.name);
       lines.push(cartItemDateLine(item));
       var pax = waPaxPhrase(item);
-      if (pax) lines.push('Pasajeros: ' + pax);
-      lines.push('Subtotal: ' + (subtotal != null ? usd(subtotal) : 'A cotizar'));
+      if (pax) lines.push(tt('wa_passengers_label') + pax);
+      lines.push(tt('wa_subtotal_label') + (subtotal != null ? usd(subtotal) : tt('cart_quote_label')));
       if (subtotal != null) { total += item.total; totalSupplementMXN += itemZoneSupplementMXN(item, zone); }
       lines.push('');
     });
-    lines.push('Hotel: ' + hotel);
-    lines.push('Habitación: ' + (room.trim() || 'Pendiente'));
+    lines.push(tt('wa_hotel_label') + hotel);
+    lines.push(tt('wa_room_label') + (room.trim() || tt('room_pending')));
     var combinedUsd = total + mxnToUsd(totalSupplementMXN);
     lines = lines.concat(paymentMessageLines(payment, combinedUsd));
-    if (maps) lines.push('Ubicación compartida: ' + maps);
-    lines.push('El horario de recogida y el punto de encuentro me serán enviados cuando la reserva quede confirmada.');
-    lines.push('Entiendo que esta solicitud todavía no constituye una reserva confirmada. La disponibilidad y los detalles del pago serán coordinados directamente por WhatsApp.');
+    if (maps) lines.push(tt('wa_location_shared_label') + maps);
+    lines.push(tt('wa_pickup_note'));
+    lines.push(tt('wa_disclaimer'));
     return lines;
   }
 
@@ -1056,34 +1126,34 @@
       return '<div class="counter-row">' +
         '<div class="counter-label">' + label + (sub ? '<small>' + sub + '</small>' : '') + '</div>' +
         '<div class="counter-controls">' +
-        '<button type="button" class="counter-btn" data-dec="' + id + '" aria-label="Restar">−</button>' +
+        '<button type="button" class="counter-btn" data-dec="' + id + '" aria-label="' + tt('counter_minus_aria') + '">−</button>' +
         '<span class="counter-value" id="val-' + id + '">1</span>' +
-        '<button type="button" class="counter-btn" data-inc="' + id + '" aria-label="Sumar">+</button>' +
+        '<button type="button" class="counter-btn" data-inc="' + id + '" aria-label="' + tt('counter_plus_aria') + '">+</button>' +
         '</div></div>';
     }
 
     var html = editItem
-      ? '<p class="mc-editing-banner">✎ Estás editando este tour en tu carrito. <a href="#" id="bw-cancel-edit">Cancelar</a></p>'
+      ? '<p class="mc-editing-banner">' + tt('bw_editing_banner') + ' <a href="#" id="bw-cancel-edit">' + tt('bw_cancel_edit') + '</a></p>'
       : '';
-    html += '<h3>' + (data.type === 'quote' ? 'Pedí tu cotización' : 'Reservá este tour') + '</h3>';
+    html += '<h3>' + (data.type === 'quote' ? tt('bw_quote_title') : tt('bw_book_title')) + '</h3>';
 
     if (data.type !== 'quote' && data.type !== 'duration_group') {
       var priceLabel = data.type === 'adult_child'
-        ? usd(data.adult) + ' <small>adulto</small> · ' + usd(data.child) + ' <small>niño</small>'
-        : (data.type === 'tiers' ? usd(data.tiers[0].price) + ' <small>desde, por persona</small>' : usd(data.price) + ' <small>por persona</small>');
+        ? usd(data.adult) + ' <small>' + tt('bw_price_adult_label') + '</small> · ' + usd(data.child) + ' <small>' + tt('bw_price_child_label') + '</small>'
+        : (data.type === 'tiers' ? usd(data.tiers[0].price) + ' <small>' + tt('bw_price_from_person') + '</small>' : usd(data.price) + ' <small>' + tt('bw_price_per_person') + '</small>');
       html += '<div class="booking-price">' + priceLabel + '</div>';
     } else if (data.type === 'duration_group') {
-      html += '<div class="booking-price">' + usd(data.tiers[0].price) + ' <small>desde, por el grupo (hasta ' + (data.maxGroup || 7) + ' personas)</small></div>';
+      html += '<div class="booking-price">' + usd(data.tiers[0].price) + ' <small>' + fmt(tt('bw_price_from_group_tpl'), { n: data.maxGroup || 7 }) + '</small></div>';
     }
 
     var seasonMonths = data.schedule && data.schedule.type === 'seasonal' ? data.schedule.months : null;
     // A tour can override the generic tentative-note wording with its own
     // real reason (e.g. pesca-yate-cancun: boat/weather/logistics) via
     // `scheduleNote` — falls back to the generic "no fixed days" note.
-    var tentativeNote = data.scheduleNote || ('Este tour no tiene días fijos de operación' +
-      (seasonMonths ? ' (opera de ' + MESES_LARGO[seasonMonths[0] - 1] + ' a ' + MESES_LARGO[seasonMonths[seasonMonths.length - 1] - 1] + ')' : '') +
-      ' — la fecha queda sujeta a que Agustín confirme disponibilidad por WhatsApp.');
-    html += '<div class="booking-field"><label>' + (tentative ? 'Fecha tentativa' : 'Fecha preferida') + '</label>' +
+    var tentativeNote = data.scheduleNote || fmt(tt('bw_tentative_note_generic_tpl'), {
+      season: seasonMonths ? fmt(tt('bw_tentative_note_season_tpl'), { start: MESES_LARGO[seasonMonths[0] - 1], end: MESES_LARGO[seasonMonths[seasonMonths.length - 1] - 1] }) : ''
+    });
+    html += '<div class="booking-field"><label>' + (tentative ? tt('bw_date_tentative_label') : tt('bw_date_preferred_label')) + '</label>' +
       datePickerHtml('bw-datepicker') +
       (tentative ? '<p class="payment-note">' + tentativeNote + '</p>' : '') +
       '</div>';
@@ -1092,54 +1162,54 @@
     // pesca-yate-cancun today — it has its own fixed pickup point, Marina
     // Kaybal, so a hotel-zone supplement doesn't apply there at all).
     if (!data.zoneExempt) {
-      html += '<div class="booking-field"><label>Zona de recogida</label>' +
+      html += '<div class="booking-field"><label>' + tt('bw_zone_label') + '</label>' +
         zoneSelectHtml('bw-zone', state.zone) +
-        '<p class="payment-note">Todos los precios publicados ya incluyen salida desde Playa del Carmen / Playacar.</p>' +
+        '<p class="payment-note">' + tt('zone_price_note') + '</p>' +
         '<p class="payment-note mc-zone-help">' + ZONE_HELP_NOTE + '</p>' +
         '<p class="payment-note mc-zone-supplement" id="bw-zone-note" hidden></p>' +
         '</div>';
     }
 
     if (data.type === 'tiers' || data.type === 'duration_group') {
-      html += '<div class="booking-field"><label>' + (data.type === 'duration_group' ? 'Duración' : 'Opción') + '</label><div class="tier-options" id="bw-tiers">';
+      html += '<div class="booking-field"><label>' + (data.type === 'duration_group' ? tt('bw_duration_label') : tt('bw_option_label')) + '</label><div class="tier-options" id="bw-tiers">';
       data.tiers.forEach(function (t, i) {
         html += '<label class="tier-option' + (i === state.tierIndex ? ' selected' : '') + '" data-tier="' + i + '">' +
           '<span><input type="radio" name="bw-tier" value="' + i + '"' + (i === state.tierIndex ? ' checked' : '') + '> ' + t.label + '</span>' +
-          '<span class="tier-price">' + usd(t.price) + (data.type === 'tiers' ? '/persona' : '') + '</span></label>';
+          '<span class="tier-price">' + usd(t.price) + (data.type === 'tiers' ? tt('bw_per_person_suffix') : '') + '</span></label>';
       });
       html += '</div></div>';
     }
 
     if (data.type === 'adult_child') {
       html += '<div class="booking-field">' +
-        counterRow('adults', 'Adultos', '10 años en adelante') +
-        counterRow('children', 'Niños', '3 a 9 años') +
+        counterRow('adults', tt('bw_adults_label'), tt('bw_adults_sub')) +
+        counterRow('children', tt('bw_children_label'), tt('bw_children_sub')) +
         '</div>';
     } else if (data.type !== 'duration_group') {
-      html += '<div class="booking-field">' + counterRow('persons', 'Personas', null) + '</div>';
+      html += '<div class="booking-field">' + counterRow('persons', tt('bw_persons_label'), null) + '</div>';
     } else {
-      html += '<div class="booking-field">' + counterRow('persons', 'Pasajeros', 'Hasta ' + (data.maxGroup || 7) + ' por embarcación') + '</div>';
+      html += '<div class="booking-field">' + counterRow('persons', tt('bw_passengers_label'), fmt(tt('bw_passengers_sub_tpl'), { n: data.maxGroup || 7 })) + '</div>';
     }
 
     if (hasInfants) {
-      html += '<div class="booking-field">' + counterRow('infants', 'Infantes', '0 a 2 años · sin cargo, pero cuentan para el transporte') + '</div>';
+      html += '<div class="booking-field">' + counterRow('infants', tt('bw_infants_label'), tt('bw_infants_sub')) + '</div>';
     }
 
     if (data.type !== 'quote' && data.type !== 'duration_group') {
-      html += '<div class="booking-total-row"><span class="label">Total</span><span class="total" id="bw-total">' + usd(calcDisplayTotal()) + '</span></div>';
+      html += '<div class="booking-total-row"><span class="label">' + tt('bw_total_label') + '</span><span class="total" id="bw-total">' + usd(calcDisplayTotal()) + '</span></div>';
     }
 
     // Guest data (nombre, hotel, habitación, ubicación, método de pago) is
     // asked ONCE, in the cart/checkout — not repeated on every tour page.
     // This widget only decides what varies per tour: fecha y pasajeros.
-    html += '<button type="button" class="btn-primary" id="bw-cta">' + (editItem ? 'Guardar cambios' : '🛒 Agregar al carrito') + '</button>';
+    html += '<button type="button" class="btn-primary" id="bw-cta">' + (editItem ? tt('bw_save_btn') : tt('bw_add_btn')) + '</button>';
     html += '<p class="contact-form-status" id="bw-checkout-status"></p>';
     html += '<div id="bw-added" class="bw-added" hidden>' +
-      '<p>' + (editItem ? '✓ Cambios guardados' : '✓ Agregado al carrito') + '</p>' +
-      '<button type="button" class="btn-primary" id="bw-goto-cart">Ver carrito y reservar →</button>' +
-      '<button type="button" class="btn-secondary" id="bw-keep-browsing">Seguir viendo tours</button>' +
+      '<p>' + (editItem ? tt('bw_saved_msg') : tt('bw_added_msg')) + '</p>' +
+      '<button type="button" class="btn-primary" id="bw-goto-cart">' + tt('bw_goto_cart_btn') + '</button>' +
+      '<button type="button" class="btn-secondary" id="bw-keep-browsing">' + tt('bw_keep_browsing_btn') + '</button>' +
       '</div>';
-    html += '<p class="booking-fineprint">Se coordina y confirma directo por WhatsApp con Agustín.</p>';
+    html += '<p class="booking-fineprint">' + tt('bw_fineprint') + '</p>';
 
     el.innerHTML = html;
     updateTotal();
@@ -1180,7 +1250,7 @@
         state.tierIndex = parseInt(opt.getAttribute('data-tier'), 10);
         if (data.type === 'duration_group') {
           var priceEl = el.querySelector('.booking-price');
-          if (priceEl) priceEl.innerHTML = usd(data.tiers[state.tierIndex].price) + ' <small>por el grupo (hasta ' + (data.maxGroup || 7) + ' personas)</small>';
+          if (priceEl) priceEl.innerHTML = usd(data.tiers[state.tierIndex].price) + ' <small>' + fmt(tt('bw_price_per_group_tpl'), { n: data.maxGroup || 7 }) + '</small>';
         }
         updateTotal();
       });
@@ -1198,7 +1268,7 @@
         if (mxnAmt > 0) {
           var pax = currentPayingPax();
           noteEl.hidden = false;
-          noteEl.textContent = '+ ' + mxn(mxnAmt) + ' de cargo adicional por ubicación (' + pax + (pax === 1 ? ' pasajero' : ' pasajeros') + '), ya incluido en el total.';
+          noteEl.textContent = fmt(tt('bw_zone_note_tpl'), { amount: mxn(mxnAmt), pax: plural(pax, 'passenger') });
         } else {
           noteEl.hidden = true;
         }
@@ -1228,10 +1298,10 @@
       if (!ctaBtn) return;
       if (isAlreadyInCart()) {
         ctaBtn.disabled = true;
-        ctaBtn.textContent = '✓ Agregado al carrito';
+        ctaBtn.textContent = tt('bw_added_msg');
       } else {
         ctaBtn.disabled = false;
-        ctaBtn.textContent = editItem ? 'Guardar cambios' : '🛒 Agregar al carrito';
+        ctaBtn.textContent = editItem ? tt('bw_save_btn') : tt('bw_add_btn');
       }
     }
     refreshAddState();
@@ -1260,11 +1330,14 @@
       // invalid days in the calendar isn't enough on its own (state could
       // in principle hold a stale/invalid value some other way). Guest
       // data (nombre, hotel, pago, etc.) is validated later, in the cart.
-      var dateOk = isDateAllowed(state.date, data.schedule);
-      if (!dateOk) {
+      // A date beyond the one-month window gets the same explanation +
+      // contact-form link as the calendar itself, instead of the generic
+      // "pick a valid date" message — never silently rejected with no reason.
+      var reason = dateBlockReason(state.date, data.schedule);
+      if (reason) {
         var status = document.getElementById('bw-checkout-status');
         if (status) {
-          status.textContent = 'Elegí una fecha válida para este tour antes de agregar al carrito.';
+          status.innerHTML = reason === 'too-far' ? tt('dp_blocked_too_far') : tt('bw_choose_valid_date_error');
           status.className = 'contact-form-status error';
         }
         datepickerEl.classList.add('field-invalid');
@@ -1318,11 +1391,25 @@
     initNavDropdown();
     initMobileMenu();
     initCarousels();
-    initContactForm();
+    initFutureTripForm();
     initAgustinStories();
     initFaq();
     initReviewsCarousel();
+    initLangSwitch();
   });
+
+  // ---------- ES/EN switcher: persist a manual choice so it always wins
+  // over auto-detection on future visits (see the blocking script in
+  // <head>, injected by render_head in scripts/generate_site.py). The
+  // links themselves are plain <a href> to the pre-rendered counterpart
+  // page — this only records the preference before the browser navigates.
+  function initLangSwitch() {
+    document.querySelectorAll('[data-lang-link]').forEach(function (a) {
+      a.addEventListener('click', function () {
+        try { localStorage.setItem('mc_lang', a.getAttribute('data-lang-link')); } catch (e) {}
+      });
+    });
+  }
 
   // ---------- FAQ accordion (home) ----------
   function initFaq() {
@@ -1375,35 +1462,57 @@
     });
   }
 
-  // ---------- contact form (Formspree, for travelers still 1-3 months out) ----------
-  function initContactForm() {
+  // ---------- future-trip / no-fixed-date form: composes a WhatsApp
+  // message from the fields and opens wa.me — no backend, no Formspree,
+  // no promise of a confirmed booking or an automatic reminder (see the
+  // disclaimer line always appended to the message). `cf-nodate` lets a
+  // visitor say outright they don't know their dates yet instead of
+  // leaving the month field in some guessed state. ----------
+  function monthInputToText(value) {
+    // value is 'YYYY-MM' from <input type="month">
+    var parts = value.split('-');
+    var m = parseInt(parts[1], 10) - 1;
+    var months = I18N.months_long || [];
+    return (months[m] || parts[1]) + ' ' + parts[0];
+  }
+  function initFutureTripForm() {
     var form = document.getElementById('mc-contact-form');
     if (!form) return;
     var status = document.getElementById('mc-contact-status');
-    var btn = form.querySelector('button[type="submit"]');
+    var dateInput = document.getElementById('cf-date');
+    var nodateCheckbox = document.getElementById('cf-nodate');
+    if (nodateCheckbox && dateInput) {
+      nodateCheckbox.addEventListener('change', function () {
+        dateInput.disabled = nodateCheckbox.checked;
+        if (nodateCheckbox.checked) dateInput.value = '';
+      });
+    }
     form.addEventListener('submit', function (e) {
       e.preventDefault();
-      btn.disabled = true;
-      status.textContent = 'Enviando...';
-      status.className = 'contact-form-status';
-      fetch(form.action, {
-        method: 'POST',
-        body: new FormData(form),
-        headers: { Accept: 'application/json' }
-      }).then(function (res) {
-        if (res.ok) {
-          form.reset();
-          status.textContent = '¡Gracias! Te contactamos pronto.';
-          status.className = 'contact-form-status ok';
-        } else {
-          throw new Error('bad status');
-        }
-      }).catch(function () {
-        status.textContent = 'No se pudo enviar. Probá de nuevo o escribinos por WhatsApp.';
+      var name = document.getElementById('cf-name').value.trim();
+      var phone = document.getElementById('cf-phone').value.trim();
+      var emailEl = document.getElementById('cf-email');
+      var email = emailEl ? emailEl.value.trim() : '';
+      var toursInteres = document.getElementById('cf-tours').value.trim();
+      var message = document.getElementById('cf-message').value.trim();
+      if (!name || !phone) {
+        status.textContent = tt('future_form_missing');
         status.className = 'contact-form-status error';
-      }).then(function () {
-        btn.disabled = false;
-      });
+        return;
+      }
+      var dateText = (nodateCheckbox && nodateCheckbox.checked) || !dateInput || !dateInput.value
+        ? tt('future_form_nodate_value')
+        : monthInputToText(dateInput.value);
+      var lines = [fmt(tt('future_form_greeting_tpl'), { name: name })];
+      lines.push(tt('future_form_phone_wa_label') + ': ' + phone);
+      if (email) lines.push(tt('future_form_email_wa_label') + ': ' + email);
+      lines.push(tt('future_form_date_wa_label') + ': ' + dateText);
+      if (toursInteres) lines.push(tt('future_form_tours_wa_label') + ': ' + toursInteres);
+      if (message) lines.push(tt('future_form_message_wa_label') + ': ' + message);
+      lines.push(tt('future_form_disclaimer'));
+      window.open(waLink(lines.join('\n')), '_blank', 'noopener');
+      status.textContent = tt('future_form_opened');
+      status.className = 'contact-form-status ok';
     });
   }
 
@@ -1599,10 +1708,14 @@
       var beforeFrag = document.createDocumentFragment();
       var afterFrag = document.createDocumentFragment();
       originalCards.forEach(function (card) {
-        var b = card.cloneNode(true); b.setAttribute('aria-hidden', 'true'); beforeFrag.appendChild(b);
+        var b = card.cloneNode(true); b.setAttribute('aria-hidden', 'true');
+        b.querySelectorAll('.review-toggle').forEach(function (t) { t.tabIndex = -1; });
+        beforeFrag.appendChild(b);
       });
       originalCards.forEach(function (card) {
-        var a = card.cloneNode(true); a.setAttribute('aria-hidden', 'true'); afterFrag.appendChild(a);
+        var a = card.cloneNode(true); a.setAttribute('aria-hidden', 'true');
+        a.querySelectorAll('.review-toggle').forEach(function (t) { t.tabIndex = -1; });
+        afterFrag.appendChild(a);
       });
       track.insertBefore(beforeFrag, track.firstChild);
       track.appendChild(afterFrag);
@@ -1703,6 +1816,29 @@
     window.matchMedia('(prefers-reduced-motion: reduce)').addEventListener('change', function (e) {
       reduce = e.matches;
       if (reduce) stopAutoplay(); else startAutoplay();
+    });
+
+    // "See original" / "View English translation" toggle — English site
+    // only (see render_reviews_section: Spanish never renders this
+    // button). Updates EVERY copy sharing the same data-review-idx at
+    // once (including clones made above), so a clone that scrolls into
+    // view later always matches whatever was last chosen — never a
+    // duplicated `id`, never a screen-reader trap (clone copies are
+    // tabindex="-1" and live under an aria-hidden ancestor).
+    wrap.querySelectorAll('.review-toggle').forEach(function (btn) {
+      btn.addEventListener('click', function () {
+        var idx = btn.getAttribute('data-review-idx');
+        var nextState = btn.getAttribute('data-state') === 'original' ? 'translated' : 'original';
+        var text = nextState === 'original' ? btn.getAttribute('data-original') : btn.getAttribute('data-translated');
+        var label = nextState === 'original' ? btn.getAttribute('data-label-translated') : btn.getAttribute('data-label-original');
+        wrap.querySelectorAll('.review-quote[data-review-idx="' + idx + '"]').forEach(function (p) {
+          p.textContent = '“' + text + '”';
+        });
+        wrap.querySelectorAll('.review-toggle[data-review-idx="' + idx + '"]').forEach(function (b) {
+          b.textContent = label;
+          b.setAttribute('data-state', nextState);
+        });
+      });
     });
   }
 
