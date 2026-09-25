@@ -911,14 +911,10 @@ def render_reviews_section():
       <p class="review-summary"><span aria-hidden="true">★</span> 5.0 en Google · 5 opiniones</p>
       <a class="btn-secondary review-cta" href="{GOOGLE_REVIEWS_URL}" target="_blank" rel="noopener noreferrer">Ver todas las reseñas en Google →</a>
     </div>
-    <div class="review-carousel-outer">
-      <button type="button" class="review-carousel-arrow review-carousel-arrow-prev" id="review-carousel-prev" aria-label="Reseña anterior">‹</button>
-      <div class="review-carousel-wrap" id="review-carousel-wrap" tabindex="0" role="group" aria-roledescription="carrusel" aria-label="Reseñas de clientes">
-        <div class="review-carousel">
-          {cards_html}
-        </div>
+    <div class="review-carousel-wrap" id="review-carousel-wrap" tabindex="0" role="group" aria-roledescription="carrusel" aria-label="Reseñas de clientes">
+      <div class="review-carousel">
+        {cards_html}
       </div>
-      <button type="button" class="review-carousel-arrow review-carousel-arrow-next" id="review-carousel-next" aria-label="Siguiente reseña">›</button>
     </div>
   </div>
 </section>'''
