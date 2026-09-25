@@ -1585,26 +1585,45 @@
 
     var reduce = window.matchMedia('(prefers-reduced-motion: reduce)').matches;
 
-    var beforeFrag = document.createDocumentFragment();
-    var afterFrag = document.createDocumentFragment();
-    originalCards.forEach(function (card) {
-      var b = card.cloneNode(true); b.setAttribute('aria-hidden', 'true'); beforeFrag.appendChild(b);
-    });
-    originalCards.forEach(function (card) {
-      var a = card.cloneNode(true); a.setAttribute('aria-hidden', 'true'); afterFrag.appendChild(a);
-    });
-    track.insertBefore(beforeFrag, track.firstChild);
-    track.appendChild(afterFrag);
+    // With only a handful of real review cards, one real "set" can be
+    // narrower than the visible viewport (.container maxes out at
+    // 1160px, one set of 3 cards is under 1000px). A single clone set on
+    // each side (old approach) then never leaves enough scrollable
+    // buffer for the wraparound correction below to fire before the
+    // browser clamps scrollLeft at its native end — the carousel visibly
+    // stalls instead of looping. Stacking BUFFER_SETS clone sets on each
+    // side guarantees a safety margin far wider than any realistic
+    // viewport, so the jump always happens well before that clamp.
+    var BUFFER_SETS = 3;
+    for (var side = 0; side < BUFFER_SETS; side++) {
+      var beforeFrag = document.createDocumentFragment();
+      var afterFrag = document.createDocumentFragment();
+      originalCards.forEach(function (card) {
+        var b = card.cloneNode(true); b.setAttribute('aria-hidden', 'true'); beforeFrag.appendChild(b);
+      });
+      originalCards.forEach(function (card) {
+        var a = card.cloneNode(true); a.setAttribute('aria-hidden', 'true'); afterFrag.appendChild(a);
+      });
+      track.insertBefore(beforeFrag, track.firstChild);
+      track.appendChild(afterFrag);
+    }
 
     var setWidth = 0;
-    function measure() { setWidth = track.scrollWidth / 3; }
+    var totalWidth = 0;
+    function measure() {
+      setWidth = track.scrollWidth / (BUFFER_SETS * 2 + 1);
+      totalWidth = track.scrollWidth;
+    }
     measure();
-    wrap.scrollLeft = setWidth; // start on the middle (real) set
+    wrap.scrollLeft = setWidth * BUFFER_SETS; // start on the middle (real) set
 
     wrap.addEventListener('scroll', function () {
       if (setWidth <= 0) return;
-      if (wrap.scrollLeft <= 0) wrap.scrollLeft += setWidth;
-      else if (wrap.scrollLeft >= setWidth * 2) wrap.scrollLeft -= setWidth;
+      // Keep at least one full set of buffer beyond both edges of the
+      // visible viewport at all times; jump by a whole number of set
+      // widths (identical clones) so the correction is pixel-seamless.
+      if (wrap.scrollLeft <= setWidth) wrap.scrollLeft += setWidth * BUFFER_SETS;
+      else if (wrap.scrollLeft + wrap.clientWidth >= totalWidth - setWidth) wrap.scrollLeft -= setWidth * BUFFER_SETS;
     });
     window.addEventListener('resize', measure);
 
@@ -1661,18 +1680,15 @@
     // ---- touch swipe: overflow-x:auto already gives native swipe
     // scrolling for free — only pause/resume (above) is needed here. ----
 
-    // ---- prev/next arrows + keyboard (ArrowLeft/ArrowRight on the
-    // focusable wrap, which carries tabindex="0" in the markup) ----
+    // ---- keyboard (ArrowLeft/ArrowRight on the focusable wrap, which
+    // carries tabindex="0" in the markup) — no visible nav buttons, but
+    // the carousel stays keyboard-operable once focused. ----
     function cardStep() {
       var first = track.querySelector('.tour-card');
       if (!first) return wrap.clientWidth;
       var gap = parseFloat(window.getComputedStyle(track).gap) || 0;
       return first.getBoundingClientRect().width + gap;
     }
-    var prevBtn = document.getElementById('review-carousel-prev');
-    var nextBtn = document.getElementById('review-carousel-next');
-    if (prevBtn) prevBtn.addEventListener('click', function () { wrap.scrollBy({ left: -cardStep(), behavior: reduce ? 'auto' : 'smooth' }); });
-    if (nextBtn) nextBtn.addEventListener('click', function () { wrap.scrollBy({ left: cardStep(), behavior: reduce ? 'auto' : 'smooth' }); });
     wrap.addEventListener('keydown', function (e) {
       if (e.key === 'ArrowRight') { e.preventDefault(); wrap.scrollBy({ left: cardStep(), behavior: reduce ? 'auto' : 'smooth' }); }
       else if (e.key === 'ArrowLeft') { e.preventDefault(); wrap.scrollBy({ left: -cardStep(), behavior: reduce ? 'auto' : 'smooth' }); }
